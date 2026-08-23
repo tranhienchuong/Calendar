@@ -123,6 +123,8 @@ class CalendarViewModel @Inject constructor(
         )
 
     private var activeLoadJob: Job? = null
+    private var preloadJob: Job? = null
+    private val inFlightMonths = java.util.Collections.synchronizedSet(HashSet<YearMonth>())
 
     init {
         val initialMonth = YearMonth.now()
@@ -131,16 +133,22 @@ class CalendarViewModel @Inject constructor(
 
     fun getMonthDays(yearMonth: YearMonth): ImmutableList<CalendarDayUiModel>? {
         val cached = getCachedMonth(yearMonth)
-        if (cached == null) {
+        if (cached != null) return cached
+
+        if (inFlightMonths.add(yearMonth)) {
             viewModelScope.launch(defaultDispatcher) {
-                val days = generateMonthDays(yearMonth)
-                putCachedMonth(yearMonth, days)
-                _uiState.update {
-                    it.copy(monthDataMap = getCacheSnapshot())
+                try {
+                    val days = generateMonthDays(yearMonth)
+                    putCachedMonth(yearMonth, days)
+                    _uiState.update {
+                        it.copy(monthDataMap = getCacheSnapshot())
+                    }
+                } finally {
+                    inFlightMonths.remove(yearMonth)
                 }
             }
         }
-        return cached
+        return null
     }
 
     fun loadMonth(year: Int, month: Int) {
@@ -204,7 +212,8 @@ class CalendarViewModel @Inject constructor(
     }
 
     private fun preloadAdjacentMonths(baseMonth: YearMonth) {
-        viewModelScope.launch(defaultDispatcher) {
+        preloadJob?.cancel()
+        preloadJob = viewModelScope.launch(defaultDispatcher) {
             val prevMonth = baseMonth.minusMonths(1)
             val nextMonth = baseMonth.plusMonths(1)
             var updated = false
