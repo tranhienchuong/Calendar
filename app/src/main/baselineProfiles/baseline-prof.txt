@@ -1,0 +1,37 @@
+# Baseline Profile Rules for Lịch Vạn Niên (com.example.lichvannien)
+
+# Core Application & Activities
+HSPLcom/example/lichvannien/MainActivity;-><init>()V
+HSPLcom/example/lichvannien/MainActivity;->onCreate(Landroid/os/Bundle;)V
+HSPLcom/example/lichvannien/LichVanNienApp;-><init>()V
+HSPLcom/example/lichvannien/LichVanNienApp;->onCreate()V
+
+# Calendar UI & ViewModel
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->CalendarScreen(Lkotlin/jvm/functions/Function3;Landroidx/compose/ui/Modifier;Lcom/example/lichvannien/ui/calendar/CalendarViewModel;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->CalendarGrid(Lkotlinx/collections/immutable/ImmutableList;Lkotlin/jvm/functions/Function3;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->DayCell(Lcom/example/lichvannien/ui/calendar/CalendarDayUiModel;Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;-><init>(Lcom/example/lichvannien/domain/util/LunarConverter;Lcom/example/lichvannien/domain/util/AuspiciousCalculator;Lcom/example/lichvannien/domain/repository/SpecialDayRepository;Lkotlinx/coroutines/CoroutineDispatcher;)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->loadMonth(II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->getMonthDays(Ljava/time/YearMonth;)Lkotlinx/collections/immutable/ImmutableList;
+HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->goToPreviousMonth()V
+HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->goToNextMonth()V
+HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->goToToday()V
+HSPLcom/example/lichvannien/ui/calendar/CalendarUiState;-><init>(Ljava/time/YearMonth;Ljava/time/YearMonth;Lkotlinx/collections/immutable/ImmutableList;Ljava/util/Map;Z)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarDayUiModel;-><init>(IIILjava/lang/String;Ljava/lang/String;ZZZZZZLjava/lang/String;)V
+
+# Domain Utils & Calculation Engines
+HSPLcom/example/lichvannien/domain/util/LunarConverter;->solarToLunar(III)Lcom/example/lichvannien/domain/model/LunarDate;
+HSPLcom/example/lichvannien/domain/util/AuspiciousCalculator;->calculate(Lcom/example/lichvannien/domain/model/LunarDate;)Lcom/example/lichvannien/domain/model/AuspiciousDay;
+HSPLcom/example/lichvannien/domain/model/SolarDate;-><init>(III)V
+HSPLcom/example/lichvannien/domain/model/LunarDate;-><init>(IIIZ)V
+
+# Compose Foundation Pager & Layout
+HSPLandroidx/compose/foundation/pager/PagerState;-><init>(IF)V
+HSPLandroidx/compose/foundation/pager/PagerState;->getCurrentPage()I
+HSPLandroidx/compose/foundation/pager/PagerState;->getTargetPage()I
+HSPLandroidx/compose/foundation/pager/PagerState;->isScrollInProgress()Z
+HSPLandroidx/compose/foundation/pager/PagerWrapperKt;->HorizontalPager(Landroidx/compose/foundation/pager/PagerState;Landroidx/compose/ui/Modifier;Landroidx/compose/foundation/layout/PaddingValues;Landroidx/compose/foundation/pager/PageSize;ILF;Landroidx/compose/ui/Alignment$Vertical;Landroidx/compose/foundation/gestures/TargetedFlingBehavior;ZZLkotlin/jvm/functions/Function1;Landroidx/compose/foundation/pager/PagerSnapDistance;Lkotlin/jvm/functions/Function4;Landroidx/compose/runtime/Composer;III)V
+
+# Coroutines & Collections
+HSPLkotlinx/coroutines/flow/StateFlowImpl;->getValue()Ljava/lang/Object;
+HSPLkotlinx/collections/immutable/persistentListOf()Lkotlinx/collections/immutable/PersistentList;

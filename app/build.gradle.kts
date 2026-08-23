@@ -62,6 +62,9 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
 
+  // Profileinstaller for Baseline Profiles
+  implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+
   // Arch Components
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.viewmodel.compose)

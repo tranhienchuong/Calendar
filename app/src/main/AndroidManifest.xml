@@ -12,6 +12,7 @@
         android:supportsRtl="true"
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/Theme.lichvannien">
+        <profileable android:shell="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -23,4 +24,3 @@
     </application>
 
 </manifest>
-

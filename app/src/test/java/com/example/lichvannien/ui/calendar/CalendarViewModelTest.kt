@@ -70,9 +70,11 @@ class CalendarViewModelTest {
         val today = LocalDate.now()
         val todayDay = state.daysList.firstOrNull { it.isToday }
         assertThat(todayDay).isNotNull()
-        assertThat(todayDay!!.solarDate.year).isEqualTo(today.year)
-        assertThat(todayDay.solarDate.month).isEqualTo(today.monthValue)
-        assertThat(todayDay.solarDate.day).isEqualTo(today.dayOfMonth)
+        assertThat(todayDay!!.year).isEqualTo(today.year)
+        assertThat(todayDay.month).isEqualTo(today.monthValue)
+        assertThat(todayDay.day).isEqualTo(today.dayOfMonth)
+        assertThat(todayDay.solarDayText).isEqualTo(today.dayOfMonth.toString())
+        assertThat(todayDay.contentDescription).contains("Hôm nay")
     }
 
     @Test
@@ -104,8 +106,8 @@ class CalendarViewModelTest {
         // Verify the first current-month day in the grid matches expectedFinalMonth
         val currentMonthDays = finalState.daysList.filter { it.isCurrentMonth }
         assertThat(currentMonthDays).isNotEmpty()
-        assertThat(currentMonthDays.first().solarDate.month).isEqualTo(expectedFinalMonth.monthValue)
-        assertThat(currentMonthDays.first().solarDate.year).isEqualTo(expectedFinalMonth.year)
+        assertThat(currentMonthDays.first().month).isEqualTo(expectedFinalMonth.monthValue)
+        assertThat(currentMonthDays.first().year).isEqualTo(expectedFinalMonth.year)
     }
 
     @Test
@@ -133,8 +135,8 @@ class CalendarViewModelTest {
         assertThat(finalState.daysList).hasSize(42)
 
         val currentMonthDays = finalState.daysList.filter { it.isCurrentMonth }
-        assertThat(currentMonthDays.first().solarDate.month).isEqualTo(expectedFinalMonth.monthValue)
-        assertThat(currentMonthDays.first().solarDate.year).isEqualTo(expectedFinalMonth.year)
+        assertThat(currentMonthDays.first().month).isEqualTo(expectedFinalMonth.monthValue)
+        assertThat(currentMonthDays.first().year).isEqualTo(expectedFinalMonth.year)
     }
 
     @Test
@@ -144,10 +146,6 @@ class CalendarViewModelTest {
 
         val initialMonth = viewModel.uiState.value.targetMonth
         val nextMonth = initialMonth.plusMonths(1)
-
-        // Reset repository counters after initial load & preloads of M-1, M+1
-        val initialSolarCalls = fakeRepository.solarCallCount
-        val initialLunarCalls = fakeRepository.lunarCallCount
 
         // Navigate to next month (which was preloaded)
         viewModel.goToNextMonth()
@@ -159,8 +157,6 @@ class CalendarViewModelTest {
         assertThat(stateImmediate.isLoading).isFalse()
         assertThat(stateImmediate.daysList).hasSize(42)
 
-        // No new solar calls for nextMonth since it was in cache
-        // (Preload may trigger for nextMonth + 1)
         advanceUntilIdle()
         assertThat(viewModel.uiState.value.displayedMonth).isEqualTo(nextMonth)
     }
@@ -195,8 +191,8 @@ class CalendarViewModelTest {
 
         // Ensure slowMonth days never overwrote fastMonth
         val currentMonthDays = finalState.daysList.filter { it.isCurrentMonth }
-        assertThat(currentMonthDays.first().solarDate.year).isEqualTo(2035)
-        assertThat(currentMonthDays.first().solarDate.month).isEqualTo(6)
+        assertThat(currentMonthDays.first().year).isEqualTo(2035)
+        assertThat(currentMonthDays.first().month).isEqualTo(6)
     }
 
     @Test
@@ -230,10 +226,11 @@ class CalendarViewModelTest {
         advanceUntilIdle()
 
         val sepState = viewModel.uiState.value
-        val sep2 = sepState.daysList.first { it.isCurrentMonth && it.solarDate.day == 2 }
+        val sep2 = sepState.daysList.first { it.isCurrentMonth && it.day == 2 }
         assertThat(sep2.hasSpecialEvent).isTrue()
+        assertThat(sep2.contentDescription).contains("Có sự kiện đặc biệt")
 
-        val sep3 = sepState.daysList.first { it.isCurrentMonth && it.solarDate.day == 3 }
+        val sep3 = sepState.daysList.first { it.isCurrentMonth && it.day == 3 }
         assertThat(sep3.hasSpecialEvent).isFalse()
 
         // Load February 2026 (Tet Binh Ngo is 17/02/2026 = 01/01 lunar)
@@ -241,15 +238,16 @@ class CalendarViewModelTest {
         advanceUntilIdle()
 
         val febState = viewModel.uiState.value
-        val feb17 = febState.daysList.first { it.isCurrentMonth && it.solarDate.day == 17 }
-        assertThat(feb17.lunarDate).isNotNull()
-        assertThat(feb17.lunarDate?.day).isEqualTo(1)
-        assertThat(feb17.lunarDate?.month).isEqualTo(1)
+        val feb17 = febState.daysList.first { it.isCurrentMonth && it.day == 17 }
+        assertThat(feb17.lunarDayText).isEqualTo("1/1")
         assertThat(feb17.hasSpecialEvent).isTrue()
+        assertThat(feb17.contentDescription).contains("Âm lịch ngày 1 tháng 1")
+        assertThat(feb17.contentDescription).contains("Có sự kiện đặc biệt")
 
         // Check non-event day
-        val feb18 = febState.daysList.first { it.isCurrentMonth && it.solarDate.day == 18 }
+        val feb18 = febState.daysList.first { it.isCurrentMonth && it.day == 18 }
         assertThat(feb18.hasSpecialEvent).isFalse()
+        assertThat(feb18.lunarDayText).isEqualTo("2")
     }
 }
 

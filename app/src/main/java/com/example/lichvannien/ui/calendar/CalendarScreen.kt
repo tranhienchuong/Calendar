@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
-import com.example.lichvannien.domain.model.CalendarDay
 import com.example.lichvannien.theme.*
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -39,6 +38,9 @@ import java.time.YearMonth
 
 private const val BASE_YEAR = 2000
 private const val TOTAL_PAGES = 2400 // Covers years 2000 to 2200
+private val DayCellShape = RoundedCornerShape(12.dp)
+private val DotShape = CircleShape
+private val EventDotColor = Color(0xFFF57C00)
 
 private fun pageFromYearMonth(yearMonth: YearMonth): Int {
     return (yearMonth.year - BASE_YEAR) * 12 + (yearMonth.monthValue - 1)
@@ -245,7 +247,7 @@ fun CalendarScreen(
 
 @Composable
 fun CalendarGrid(
-    days: ImmutableList<CalendarDay>,
+    days: ImmutableList<CalendarDayUiModel>,
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -267,7 +269,7 @@ fun CalendarGrid(
                         DayCell(
                             day = day,
                             onClick = {
-                                onDayClick(day.solarDate.year, day.solarDate.month, day.solarDate.day)
+                                onDayClick(day.year, day.month, day.day)
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -282,17 +284,11 @@ fun CalendarGrid(
 
 @Composable
 fun DayCell(
-    day: CalendarDay,
+    day: CalendarDayUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    
-    // Determine cell day of the week
-    val localDate = java.time.LocalDate.of(day.solarDate.year, day.solarDate.month, day.solarDate.day)
-    val dayOfWeek = localDate.dayOfWeek
-    val isSaturday = dayOfWeek == java.time.DayOfWeek.SATURDAY
-    val isSunday = dayOfWeek == java.time.DayOfWeek.SUNDAY
 
     // Background color (Today has highest priority, using primary color scheme)
     val containerColor = when {
@@ -306,8 +302,8 @@ fun DayCell(
     val solarDayColor = when {
         !day.isCurrentMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
         day.isToday -> MaterialTheme.colorScheme.onPrimary
-        isSaturday -> if (isDark) ColorSaturdayDark else ColorSaturdayLight
-        isSunday -> if (isDark) ColorSundayDark else ColorSundayLight
+        day.isSaturday -> if (isDark) ColorSaturdayDark else ColorSaturdayLight
+        day.isSunday -> if (isDark) ColorSundayDark else ColorSundayLight
         day.isHoangDao -> if (isDark) ColorHoangDaoTextDark else ColorHoangDaoTextLight
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -317,57 +313,26 @@ fun DayCell(
         !day.isCurrentMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
         day.isToday -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
         day.isHoangDao -> if (isDark) ColorHoangDaoTextDark else ColorHoangDaoTextLight
-        isSaturday -> (if (isDark) ColorSaturdayDark else ColorSaturdayLight).copy(alpha = 0.8f)
-        isSunday -> (if (isDark) ColorSundayDark else ColorSundayLight).copy(alpha = 0.8f)
+        day.isSaturday -> (if (isDark) ColorSaturdayDark else ColorSaturdayLight).copy(alpha = 0.8f)
+        day.isSunday -> (if (isDark) ColorSundayDark else ColorSundayLight).copy(alpha = 0.8f)
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     }
 
     val solarDayFontWeight = when {
-        day.isToday -> FontWeight.Bold
-        isSaturday || isSunday -> FontWeight.Bold
+        day.isToday || day.isSaturday || day.isSunday -> FontWeight.Bold
         else -> FontWeight.Medium
-    }
-
-    // Build accessibility description for TalkBack
-    val accessibilityDescription = buildString {
-        if (day.isToday) {
-            append("Hôm nay, ")
-        }
-        val dayOfWeekName = when (dayOfWeek) {
-            java.time.DayOfWeek.MONDAY -> "Thứ Hai"
-            java.time.DayOfWeek.TUESDAY -> "Thứ Ba"
-            java.time.DayOfWeek.WEDNESDAY -> "Thứ Tư"
-            java.time.DayOfWeek.THURSDAY -> "Thứ Năm"
-            java.time.DayOfWeek.FRIDAY -> "Thứ Sáu"
-            java.time.DayOfWeek.SATURDAY -> "Thứ Bảy"
-            java.time.DayOfWeek.SUNDAY -> "Chủ Nhật"
-        }
-        append("$dayOfWeekName, ngày ${day.solarDate.day} tháng ${day.solarDate.month} năm ${day.solarDate.year}. ")
-        if (day.lunarDate != null) {
-            append("Âm lịch ngày ${day.lunarDate.day} tháng ${day.lunarDate.month}. ")
-        }
-        if (day.isCurrentMonth) {
-            if (day.isHoangDao) {
-                append("Ngày Hoàng Đạo. ")
-            } else {
-                append("Ngày Hắc Đạo. ")
-            }
-        }
-        if (day.hasSpecialEvent) {
-            append("Có sự kiện đặc biệt. ")
-        }
     }
 
     val cellModifier = modifier
         .fillMaxHeight()
-        .clip(RoundedCornerShape(12.dp))
+        .clip(DayCellShape)
         .background(containerColor)
         .then(
             if (day.isCurrentMonth) {
                 Modifier.border(
                     width = 0.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = DayCellShape
                 )
             } else {
                 Modifier
@@ -377,7 +342,7 @@ fun DayCell(
         .padding(horizontal = 2.dp, vertical = 2.dp)
         .then(if (!day.isCurrentMonth) Modifier.alpha(0.3f) else Modifier)
         .clearAndSetSemantics {
-            contentDescription = accessibilityDescription
+            contentDescription = day.contentDescription
         }
 
     Column(
@@ -387,7 +352,7 @@ fun DayCell(
     ) {
         // Ngày Dương
         Text(
-            text = day.solarDate.day.toString(),
+            text = day.solarDayText,
             color = solarDayColor,
             fontSize = 15.sp,
             fontWeight = solarDayFontWeight,
@@ -397,14 +362,9 @@ fun DayCell(
         Spacer(modifier = Modifier.height(2.dp))
 
         // Ngày Âm
-        if (day.lunarDate != null) {
-            val lunarText = if (day.lunarDate.day == 1) {
-                "${day.lunarDate.day}/${day.lunarDate.month}"
-            } else {
-                day.lunarDate.day.toString()
-            }
+        if (day.lunarDayText != null) {
             Text(
-                text = lunarText,
+                text = day.lunarDayText,
                 color = lunarDayColor,
                 fontSize = 9.sp,
                 textAlign = TextAlign.Center,
@@ -420,8 +380,8 @@ fun DayCell(
         Box(
             modifier = Modifier
                 .size(3.dp)
-                .clip(CircleShape)
-                .background(if (day.hasSpecialEvent) Color(0xFFF57C00) else Color.Transparent)
+                .clip(DotShape)
+                .background(if (day.hasSpecialEvent) EventDotColor else Color.Transparent)
         )
     }
 }

@@ -1,10 +1,8 @@
 package com.example.lichvannien.ui.calendar
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lichvannien.domain.model.CalendarDay
-import com.example.lichvannien.domain.model.LunarDate
-import com.example.lichvannien.domain.model.SolarDate
 import com.example.lichvannien.domain.repository.SpecialDayRepository
 import com.example.lichvannien.domain.util.AuspiciousCalculator
 import com.example.lichvannien.domain.util.LunarConverter
@@ -25,15 +23,32 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
+@Immutable
+data class CalendarDayUiModel(
+    val year: Int,
+    val month: Int,
+    val day: Int,
+    val solarDayText: String,
+    val lunarDayText: String?,
+    val isCurrentMonth: Boolean,
+    val isToday: Boolean,
+    val isSaturday: Boolean,
+    val isSunday: Boolean,
+    val isHoangDao: Boolean,
+    val hasSpecialEvent: Boolean,
+    val contentDescription: String
+)
+
 data class CalendarUiState(
     val displayedMonth: YearMonth = YearMonth.now(),
     val targetMonth: YearMonth = YearMonth.now(),
-    val daysList: ImmutableList<CalendarDay> = persistentListOf(),
-    val monthDataMap: Map<YearMonth, ImmutableList<CalendarDay>> = emptyMap(),
+    val daysList: ImmutableList<CalendarDayUiModel> = persistentListOf(),
+    val monthDataMap: Map<YearMonth, ImmutableList<CalendarDayUiModel>> = emptyMap(),
     val isLoading: Boolean = false
 )
 
@@ -55,25 +70,25 @@ class CalendarViewModel @Inject constructor(
         private const val MAX_CACHE_SIZE = 12
     }
 
-    private val monthCache = object : LinkedHashMap<YearMonth, ImmutableList<CalendarDay>>(MAX_CACHE_SIZE, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<YearMonth, ImmutableList<CalendarDay>>?): Boolean {
+    private val monthCache = object : LinkedHashMap<YearMonth, ImmutableList<CalendarDayUiModel>>(MAX_CACHE_SIZE, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<YearMonth, ImmutableList<CalendarDayUiModel>>?): Boolean {
             return size > MAX_CACHE_SIZE
         }
     }
 
-    private fun getCachedMonth(yearMonth: YearMonth): ImmutableList<CalendarDay>? {
+    private fun getCachedMonth(yearMonth: YearMonth): ImmutableList<CalendarDayUiModel>? {
         return synchronized(monthCache) {
             monthCache[yearMonth]
         }
     }
 
-    private fun putCachedMonth(yearMonth: YearMonth, days: ImmutableList<CalendarDay>) {
+    private fun putCachedMonth(yearMonth: YearMonth, days: ImmutableList<CalendarDayUiModel>) {
         synchronized(monthCache) {
             monthCache[yearMonth] = days
         }
     }
 
-    private fun getCacheSnapshot(): Map<YearMonth, ImmutableList<CalendarDay>> {
+    private fun getCacheSnapshot(): Map<YearMonth, ImmutableList<CalendarDayUiModel>> {
         return synchronized(monthCache) {
             HashMap(monthCache)
         }
@@ -99,7 +114,7 @@ class CalendarViewModel @Inject constructor(
             initialValue = _uiState.value.targetMonth
         )
 
-    val daysList: StateFlow<ImmutableList<CalendarDay>> = _uiState
+    val daysList: StateFlow<ImmutableList<CalendarDayUiModel>> = _uiState
         .map { it.daysList }
         .stateIn(
             scope = viewModelScope,
@@ -114,7 +129,7 @@ class CalendarViewModel @Inject constructor(
         navigateToMonth(initialMonth)
     }
 
-    fun getMonthDays(yearMonth: YearMonth): ImmutableList<CalendarDay>? {
+    fun getMonthDays(yearMonth: YearMonth): ImmutableList<CalendarDayUiModel>? {
         val cached = getCachedMonth(yearMonth)
         if (cached == null) {
             viewModelScope.launch(defaultDispatcher) {
@@ -212,7 +227,7 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateMonthDays(yearMonth: YearMonth): ImmutableList<CalendarDay> = withContext(defaultDispatcher) {
+    private suspend fun generateMonthDays(yearMonth: YearMonth): ImmutableList<CalendarDayUiModel> = withContext(defaultDispatcher) {
         val year = yearMonth.year
         val month = yearMonth.monthValue
         val lengthOfMonth = yearMonth.lengthOfMonth()
@@ -252,7 +267,10 @@ class CalendarViewModel @Inject constructor(
             val date = gridStartDate.plusDays(i.toLong())
             val isCurrentMonth = date.monthValue == month && date.year == year
             val isToday = date == today
-            val solar = SolarDate(date.year, date.monthValue, date.dayOfMonth)
+            val dayOfWeek = date.dayOfWeek
+            val isSaturday = dayOfWeek == DayOfWeek.SATURDAY
+            val isSunday = dayOfWeek == DayOfWeek.SUNDAY
+            val solarDayText = date.dayOfMonth.toString()
 
             if (isCurrentMonth) {
                 val lunar = lunarDates[date.dayOfMonth] ?: lunarConverter.solarToLunar(date.year, date.monthValue, date.dayOfMonth)
@@ -260,27 +278,114 @@ class CalendarViewModel @Inject constructor(
 
                 val hasSolarEvent = date.dayOfMonth in solarEventDays
                 val hasLunarEvent = LunarEventKey(lunar.month, lunar.day, lunar.isLeapMonth) in lunarEventKeys
+                val hasSpecialEvent = hasSolarEvent || hasLunarEvent
 
-                CalendarDay(
-                    solarDate = solar,
-                    lunarDate = lunar,
-                    isHoangDao = rating.isHoangDao,
-                    hasSpecialEvent = hasSolarEvent || hasLunarEvent,
+                val lunarDayText = if (lunar.day == 1) {
+                    "${lunar.day}/${lunar.month}"
+                } else {
+                    lunar.day.toString()
+                }
+
+                val contentDescription = buildContentDescription(
+                    dayOfWeek = dayOfWeek,
+                    solarDay = date.dayOfMonth,
+                    solarMonth = date.monthValue,
+                    solarYear = date.year,
+                    lunarMonth = lunar.month,
+                    lunarDay = lunar.day,
                     isCurrentMonth = true,
-                    isToday = isToday
+                    isToday = isToday,
+                    isHoangDao = rating.isHoangDao,
+                    hasSpecialEvent = hasSpecialEvent
+                )
+
+                CalendarDayUiModel(
+                    year = date.year,
+                    month = date.monthValue,
+                    day = date.dayOfMonth,
+                    solarDayText = solarDayText,
+                    lunarDayText = lunarDayText,
+                    isCurrentMonth = true,
+                    isToday = isToday,
+                    isSaturday = isSaturday,
+                    isSunday = isSunday,
+                    isHoangDao = rating.isHoangDao,
+                    hasSpecialEvent = hasSpecialEvent,
+                    contentDescription = contentDescription
                 )
             } else {
-                CalendarDay(
-                    solarDate = solar,
-                    lunarDate = null,
+                val contentDescription = buildContentDescription(
+                    dayOfWeek = dayOfWeek,
+                    solarDay = date.dayOfMonth,
+                    solarMonth = date.monthValue,
+                    solarYear = date.year,
+                    lunarMonth = null,
+                    lunarDay = null,
+                    isCurrentMonth = false,
+                    isToday = isToday,
+                    isHoangDao = false,
+                    hasSpecialEvent = false
+                )
+
+                CalendarDayUiModel(
+                    year = date.year,
+                    month = date.monthValue,
+                    day = date.dayOfMonth,
+                    solarDayText = solarDayText,
+                    lunarDayText = null,
+                    isCurrentMonth = false,
+                    isToday = isToday,
+                    isSaturday = isSaturday,
+                    isSunday = isSunday,
                     isHoangDao = false,
                     hasSpecialEvent = false,
-                    isCurrentMonth = false,
-                    isToday = isToday
+                    contentDescription = contentDescription
                 )
             }
         }
 
         days.toImmutableList()
+    }
+
+    private fun buildContentDescription(
+        dayOfWeek: DayOfWeek,
+        solarDay: Int,
+        solarMonth: Int,
+        solarYear: Int,
+        lunarMonth: Int?,
+        lunarDay: Int?,
+        isCurrentMonth: Boolean,
+        isToday: Boolean,
+        isHoangDao: Boolean,
+        hasSpecialEvent: Boolean
+    ): String {
+        return buildString {
+            if (isToday) {
+                append("Hôm nay, ")
+            }
+            val dayOfWeekName = when (dayOfWeek) {
+                DayOfWeek.MONDAY -> "Thứ Hai"
+                DayOfWeek.TUESDAY -> "Thứ Ba"
+                DayOfWeek.WEDNESDAY -> "Thứ Tư"
+                DayOfWeek.THURSDAY -> "Thứ Năm"
+                DayOfWeek.FRIDAY -> "Thứ Sáu"
+                DayOfWeek.SATURDAY -> "Thứ Bảy"
+                DayOfWeek.SUNDAY -> "Chủ Nhật"
+            }
+            append("$dayOfWeekName, ngày $solarDay tháng $solarMonth năm $solarYear. ")
+            if (lunarDay != null && lunarMonth != null) {
+                append("Âm lịch ngày $lunarDay tháng $lunarMonth. ")
+            }
+            if (isCurrentMonth) {
+                if (isHoangDao) {
+                    append("Ngày Hoàng Đạo. ")
+                } else {
+                    append("Ngày Hắc Đạo. ")
+                }
+            }
+            if (hasSpecialEvent) {
+                append("Có sự kiện đặc biệt. ")
+            }
+        }
     }
 }
