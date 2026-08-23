@@ -20,7 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,7 +41,7 @@ fun AiChatScreen(
     val listState = rememberLazyListState()
 
     // Scroll to bottom when messages update
-    LaunchedEffect(state.messages.size, state.isTyping) {
+    LaunchedEffect(state.messages.size, state.messages.lastOrNull()?.text) {
         if (state.messages.isNotEmpty()) {
             listState.animateScrollToItem(state.messages.size - 1)
         }
@@ -106,7 +110,7 @@ fun AiChatScreen(
                 )
             }
 
-            if (state.isTyping) {
+            if (state.isTyping && (state.messages.isEmpty() || state.messages.last().text.isNotBlank())) {
                 item(key = "typing_indicator") {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -119,7 +123,7 @@ fun AiChatScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI đang suy nghĩ...",
+                            text = "AI đang phản hồi...",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -208,15 +212,33 @@ fun ChatMessageItem(
                     bottomEnd = 16.dp
                 ),
                 color = aiBubbleBg,
-                modifier = Modifier.fillMaxWidth(0.85f)
+                modifier = Modifier.fillMaxWidth(0.92f)
             ) {
-                Text(
-                    text = message.text,
-                    fontSize = 14.5.sp,
-                    lineHeight = 21.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-                )
+                Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                    if (message.text.isBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = AppHeaderBlue
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Đang soạn câu trả lời...",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        FormattedAiMessageText(
+                            text = message.text,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
     } else {
@@ -234,7 +256,7 @@ fun ChatMessageItem(
                     bottomEnd = 16.dp
                 ),
                 color = AiChatBubbleUser,
-                modifier = Modifier.fillMaxWidth(0.82f)
+                modifier = Modifier.fillMaxWidth(0.85f)
             ) {
                 Text(
                     text = message.text,
@@ -244,6 +266,154 @@ fun ChatMessageItem(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                 )
             }
+        }
+    }
+}
+
+/**
+ * Rich Markdown formatter for Jetpack Compose that eliminates raw markdown symbols
+ * (**, ###, ---, etc.) and renders clean, readable bold styling, headers, dividers, and bullet lists.
+ */
+@Composable
+fun FormattedAiMessageText(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurface
+) {
+    val lines = remember(text) { text.lines() }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        lines.forEach { rawLine ->
+            val trimmed = rawLine.trim()
+            when {
+                trimmed == "---" || trimmed == "***" -> {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                    )
+                }
+                trimmed.startsWith("### ") -> {
+                    val content = trimmed.removePrefix("### ").trim()
+                    Text(
+                        text = parseMarkdownToAnnotatedString(content),
+                        fontSize = 15.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppHeaderBlue,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                    )
+                }
+                trimmed.startsWith("## ") -> {
+                    val content = trimmed.removePrefix("## ").trim()
+                    Text(
+                        text = parseMarkdownToAnnotatedString(content),
+                        fontSize = 16.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppHeaderBlue,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
+                    )
+                }
+                trimmed.startsWith("# ") -> {
+                    val content = trimmed.removePrefix("# ").trim()
+                    Text(
+                        text = parseMarkdownToAnnotatedString(content),
+                        fontSize = 17.5.sp,
+                        fontWeight = FontWeight.Black,
+                        color = AppHeaderBlue,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
+                    )
+                }
+                trimmed.startsWith("- ") || trimmed.startsWith("* ") -> {
+                    val itemText = trimmed.substring(2).trim()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "• ",
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppHeaderBlue
+                        )
+                        Text(
+                            text = parseMarkdownToAnnotatedString(itemText),
+                            fontSize = 14.5.sp,
+                            lineHeight = 21.sp,
+                            color = color
+                        )
+                    }
+                }
+                trimmed.matches(Regex("""^\d+\.\s+.*""")) -> {
+                    val match = Regex("""^(\d+\.)\s+(.*)""").find(trimmed)
+                    if (match != null) {
+                        val num = match.groupValues[1]
+                        val itemContent = match.groupValues[2]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 1.dp)
+                        ) {
+                            Text(
+                                text = "$num ",
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AppHeaderBlue
+                            )
+                            Text(
+                                text = parseMarkdownToAnnotatedString(itemContent),
+                                fontSize = 14.5.sp,
+                                lineHeight = 21.sp,
+                                color = color
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = parseMarkdownToAnnotatedString(trimmed),
+                            fontSize = 14.5.sp,
+                            lineHeight = 21.sp,
+                            color = color
+                        )
+                    }
+                }
+                trimmed.isBlank() -> {
+                    Spacer(modifier = Modifier.height(2.dp))
+                }
+                else -> {
+                    Text(
+                        text = parseMarkdownToAnnotatedString(trimmed),
+                        fontSize = 14.5.sp,
+                        lineHeight = 21.sp,
+                        color = color
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Converts inline markdown (like **bold text**) into an AnnotatedString with bold SpanStyle.
+ */
+fun parseMarkdownToAnnotatedString(text: String): AnnotatedString {
+    return buildAnnotatedString {
+        var i = 0
+        while (i < text.length) {
+            if (i + 1 < text.length && text[i] == '*' && text[i + 1] == '*') {
+                val end = text.indexOf("**", i + 2)
+                if (end != -1) {
+                    val boldContent = text.substring(i + 2, end)
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(boldContent)
+                    }
+                    i = end + 2
+                    continue
+                }
+            }
+            append(text[i])
+            i++
         }
     }
 }

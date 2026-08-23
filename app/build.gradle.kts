@@ -1,3 +1,7 @@
+import java.util.Properties
+import java.io.File
+import java.io.FileInputStream
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
@@ -6,15 +10,25 @@ plugins {
   alias(libs.plugins.ksp)
 }
 
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        FileInputStream(file).use { load(it) }
+    }
+}
+val deepseekApiKey: String = localProperties.getProperty("DEEPSEEK_API_KEY") ?: ""
+
 android {
     namespace = "com.example.lichvannien"
     compileSdk = 36
+
     defaultConfig {
         applicationId = "com.example.lichvannien"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekApiKey\"")
     }
 
     buildTypes {
@@ -30,7 +44,7 @@ android {
     buildFeatures {
       compose = true
       aidl = false
-      buildConfig = false
+      buildConfig = true
       shaders = false
     }
 

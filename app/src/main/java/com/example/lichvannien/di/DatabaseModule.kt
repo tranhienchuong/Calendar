@@ -47,6 +47,10 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAuspiciousCalculator(): AuspiciousCalculator = AuspiciousCalculator
+
+    @Provides
+    @Singleton
+    fun provideIoDispatcher(): kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
 }
 
 @Module
