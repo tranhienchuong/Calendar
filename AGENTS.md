@@ -42,3 +42,9 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 - Keep build output, test output, and device serials out of source files.
 - Do not uninstall the application, clear application data, alter global device settings, or stop unrelated ADB/Gradle processes unless the user explicitly asks.
 - When a build is already running, wait for it or ask before stopping it; do not start competing Gradle builds.
+
+## Background task & process efficiency
+
+- Never poll in a loop or repeatedly query `manage_task` status while waiting for background tasks (e.g., Gradle builds, test runs, verify).
+- Never spawn subagents or set unnecessary timers solely to check on running tasks.
+- Rely on reactive wakeups: launch the command, give a brief user status update, and stop calling tools. The platform automatically wakes the agent with full task output upon completion without consuming idle tokens.

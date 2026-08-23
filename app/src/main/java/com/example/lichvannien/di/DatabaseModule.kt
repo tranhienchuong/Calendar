@@ -3,9 +3,11 @@ package com.example.lichvannien.di
 import android.content.Context
 import com.example.lichvannien.data.local.db.AppDatabase
 import com.example.lichvannien.data.local.db.SpecialDayDao
-import com.example.lichvannien.data.local.db.HoroscopeCacheDao
+import com.example.lichvannien.data.local.db.TaskDao
 import com.example.lichvannien.data.repository.SpecialDayRepositoryImpl
+import com.example.lichvannien.data.repository.TaskRepositoryImpl
 import com.example.lichvannien.domain.repository.SpecialDayRepository
+import com.example.lichvannien.domain.repository.TaskRepository
 import com.example.lichvannien.domain.util.AuspiciousCalculator
 import com.example.lichvannien.domain.util.LunarConverter
 import dagger.Binds
@@ -34,8 +36,8 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideHoroscopeCacheDao(database: AppDatabase): HoroscopeCacheDao {
-        return database.horoscopeCacheDao()
+    fun provideTaskDao(database: AppDatabase): TaskDao {
+        return database.taskDao()
     }
 
     @Provides
@@ -56,4 +58,10 @@ abstract class RepositoryModule {
     abstract fun bindSpecialDayRepository(
         specialDayRepositoryImpl: SpecialDayRepositoryImpl
     ): SpecialDayRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTaskRepository(
+        taskRepositoryImpl: TaskRepositoryImpl
+    ): TaskRepository
 }

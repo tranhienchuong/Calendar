@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,19 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -35,30 +30,17 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
+import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.theme.*
+import com.example.lichvannien.ui.today.AddTodayTaskDialog
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.YearMonth
 
 private const val BASE_YEAR = 2000
 private const val TOTAL_PAGES = 2400 // Covers years 2000 to 2200
-private val DayCellShape = RoundedCornerShape(12.dp)
-private val EventDotColor = Color(0xFFF57C00)
-
-@Immutable
-data class DayCellThemePalette(
-    val primary: Color,
-    val onPrimary: Color,
-    val onSurface: Color,
-    val outlineVariant: Color,
-    val hoangDaoBg: Color,
-    val hoangDaoText: Color,
-    val hacDaoBg: Color,
-    val saturdayColor: Color,
-    val sundayColor: Color,
-    val isDark: Boolean
-)
 
 private fun pageFromYearMonth(yearMonth: YearMonth): Int {
     return (yearMonth.year - BASE_YEAR) * 12 + (yearMonth.monthValue - 1)
@@ -78,6 +60,7 @@ fun CalendarScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
+    var showAddTaskDialog by remember { mutableStateOf(false) }
 
     val initialPage = remember {
         val now = YearMonth.now()
@@ -91,104 +74,96 @@ fun CalendarScreen(
         viewModel.loadMonth(settledMonth.year, settledMonth.monthValue)
     }
 
-    val isDark = isSystemInDarkTheme()
-    val colorScheme = MaterialTheme.colorScheme
-    val palette = remember(isDark, colorScheme) {
-        DayCellThemePalette(
-            primary = colorScheme.primary,
-            onPrimary = colorScheme.onPrimary,
-            onSurface = colorScheme.onSurface,
-            outlineVariant = colorScheme.outlineVariant,
-            hoangDaoBg = if (isDark) ColorHoangDaoBgDark else ColorHoangDaoBgLight,
-            hoangDaoText = if (isDark) ColorHoangDaoTextDark else ColorHoangDaoTextLight,
-            hacDaoBg = if (isDark) ColorHacDaoBgDark else ColorHacDaoBgLight,
-            saturdayColor = if (isDark) ColorSaturdayDark else ColorSaturdayLight,
-            sundayColor = if (isDark) ColorSundayDark else ColorSundayLight,
-            isDark = isDark
-        )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddTaskDialog = true },
+                containerColor = AppHeaderBlue,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.size(54.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Thêm sự kiện"
+                )
+            }
+        },
+        modifier = modifier
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            // 1. Month Header: "THÁNG 8, 2026" with < and > arrows
+            CalendarHeader(
+                pagerState = pagerState,
+                onPreviousClick = {
+                    if (pagerState.currentPage > 0) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
+                },
+                onNextClick = {
+                    if (pagerState.currentPage < TOTAL_PAGES - 1) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    }
+                }
+            )
+
+            // 2. Weekdays Header Row: T2  T3  T4  T5  T6  T7  CN
+            WeekdaysHeader()
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                thickness = 1.dp
+            )
+
+            // 3. Grid HorizontalPager (Month table)
+            HorizontalPager(
+                state = pagerState,
+                beyondViewportPageCount = 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1.35f)
+            ) { page ->
+                MonthPage(
+                    page = page,
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    selectedDate = uiState.selectedDate,
+                    onDayClick = { y, m, d ->
+                        viewModel.selectDate(LocalDate.of(y, m, d))
+                        onDayClick(y, m, d)
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // 4. Bottom Schedule Panel (Matching Image 1)
+            SelectedDateScheduleCard(
+                selectedDate = uiState.selectedDate,
+                tasks = uiState.selectedDateTasks,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.9f)
+            )
+        }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Isolated Header Section with derivedStateOf
-        CalendarHeader(
-            pagerState = pagerState,
-            onPreviousClick = {
-                if (pagerState.currentPage > 0) {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                    }
-                }
-            },
-            onNextClick = {
-                if (pagerState.currentPage < TOTAL_PAGES - 1) {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                    }
-                }
-            },
-            onTodayClick = {
-                val todayPage = pageFromYearMonth(YearMonth.now())
-                coroutineScope.launch {
-                    pagerState.animateScrollToPage(todayPage)
-                }
+    if (showAddTaskDialog) {
+        AddTodayTaskDialog(
+            onDismiss = { showAddTaskDialog = false },
+            onConfirm = { title, start, end, loc ->
+                viewModel.addNewTask(title, start, end, loc)
+                showAddTaskDialog = false
             }
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Calendar Card containing Weekday Header & HorizontalPager for Months
-        ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
-            ) {
-                // Weekdays Header Row
-                WeekdaysHeader(
-                    isDark = isDark,
-                    onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // High performance HorizontalPager for smooth 1:1 touch tracking and snapping
-                HorizontalPager(
-                    state = pagerState,
-                    beyondViewportPageCount = 1,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) { page ->
-                    MonthPage(
-                        page = page,
-                        uiState = uiState,
-                        viewModel = viewModel,
-                        palette = palette,
-                        onDayClick = onDayClick,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -197,7 +172,6 @@ fun CalendarHeader(
     pagerState: androidx.compose.foundation.pager.PagerState,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
-    onTodayClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val activeMonth by remember(pagerState) {
@@ -213,85 +187,63 @@ fun CalendarHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(
+            text = "THÁNG ${activeMonth.monthValue}, ${activeMonth.year}",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            IconButton(onClick = onPreviousClick) {
+            IconButton(
+                onClick = onPreviousClick,
+                modifier = Modifier.size(36.dp)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Previous Month"
+                    contentDescription = "Previous Month",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Text(
-                text = stringResource(
-                    R.string.calendar_header_format,
-                    activeMonth.monthValue,
-                    activeMonth.year
-                ),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-
-            IconButton(onClick = onNextClick) {
+            IconButton(
+                onClick = onNextClick,
+                modifier = Modifier.size(36.dp)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Next Month"
+                    contentDescription = "Next Month",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-
-        FilledTonalButton(
-            onClick = onTodayClick,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            ),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Today,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = stringResource(R.string.btn_today),
-                maxLines = 1,
-                softWrap = false,
-                fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }
 
 @Composable
 fun WeekdaysHeader(
-    isDark: Boolean,
-    onSurfaceVariant: Color,
     modifier: Modifier = Modifier
 ) {
-    val weekdays = remember(isDark, onSurfaceVariant) {
-        listOf(
-            R.string.day_mon to (onSurfaceVariant to FontWeight.SemiBold),
-            R.string.day_tue to (onSurfaceVariant to FontWeight.SemiBold),
-            R.string.day_wed to (onSurfaceVariant to FontWeight.SemiBold),
-            R.string.day_thu to (onSurfaceVariant to FontWeight.SemiBold),
-            R.string.day_fri to (onSurfaceVariant to FontWeight.SemiBold),
-            R.string.day_sat to ((if (isDark) ColorSaturdayDark else ColorSaturdayLight) to FontWeight.Bold),
-            R.string.day_sun to ((if (isDark) ColorSundayDark else ColorSundayLight) to FontWeight.Bold)
-        )
-    }
+    val weekdays = listOf(
+        R.string.day_mon to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
+        R.string.day_tue to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
+        R.string.day_wed to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
+        R.string.day_thu to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
+        R.string.day_fri to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
+        R.string.day_sat to (Color(0xFF8B0000) to FontWeight.Bold),
+        R.string.day_sun to (Color(0xFFC62828) to FontWeight.Bold)
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 6.dp)
     ) {
         weekdays.forEach { (weekdayId, style) ->
             val (color, fontWeight) = style
@@ -300,7 +252,7 @@ fun WeekdaysHeader(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 fontWeight = fontWeight,
-                fontSize = 14.sp,
+                fontSize = 13.5.sp,
                 color = color
             )
         }
@@ -312,7 +264,7 @@ fun MonthPage(
     page: Int,
     uiState: CalendarUiState,
     viewModel: CalendarViewModel,
-    palette: DayCellThemePalette,
+    selectedDate: LocalDate,
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -321,7 +273,7 @@ fun MonthPage(
 
     CalendarGrid(
         days = days,
-        palette = palette,
+        selectedDate = selectedDate,
         onDayClick = onDayClick,
         modifier = modifier
     )
@@ -330,35 +282,48 @@ fun MonthPage(
 @Composable
 fun CalendarGrid(
     days: ImmutableList<CalendarDayUiModel>,
-    palette: DayCellThemePalette,
+    selectedDate: LocalDate,
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+
     Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        modifier = modifier
+            .fillMaxSize()
+            .border(0.5.dp, borderColor)
     ) {
         for (rowIndex in 0 until 6) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    .weight(1f)
             ) {
                 for (colIndex in 0 until 7) {
                     val dayIndex = rowIndex * 7 + colIndex
                     if (dayIndex < days.size) {
                         val day = days[dayIndex]
+                        val isSelected = day.isCurrentMonth &&
+                                day.year == selectedDate.year &&
+                                day.month == selectedDate.monthValue &&
+                                day.day == selectedDate.dayOfMonth
+
                         key(day.year, day.month, day.day) {
                             DayCell(
                                 day = day,
-                                palette = palette,
+                                isSelected = isSelected,
+                                borderColor = borderColor,
                                 onDayClick = onDayClick,
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .border(0.5.dp, borderColor)
+                        )
                     }
                 }
             }
@@ -369,114 +334,228 @@ fun CalendarGrid(
 @Composable
 fun DayCell(
     day: CalendarDayUiModel,
-    palette: DayCellThemePalette,
+    isSelected: Boolean,
+    borderColor: Color,
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Background color (Today has highest priority, using primary color scheme)
-    val containerColor = when {
-        !day.isCurrentMonth -> Color.Transparent
-        day.isToday -> palette.primary
-        day.isHoangDao -> palette.hoangDaoBg
-        else -> palette.hacDaoBg // Transparent
-    }
-
-    // Solar day text color (Today has onPrimary color)
-    val solarDayColor = when {
-        !day.isCurrentMonth -> palette.onSurface.copy(alpha = 0.3f)
-        day.isToday -> palette.onPrimary
-        day.isSaturday -> palette.saturdayColor
-        day.isSunday -> palette.sundayColor
-        day.isHoangDao -> palette.hoangDaoText
-        else -> palette.onSurface
-    }
-
-    // Lunar day text color (Today has onPrimary with opacity)
-    val lunarDayColor = when {
-        !day.isCurrentMonth -> palette.onSurface.copy(alpha = 0.3f)
-        day.isToday -> palette.onPrimary.copy(alpha = 0.8f)
-        day.isHoangDao -> palette.hoangDaoText
-        day.isSaturday -> palette.saturdayColor.copy(alpha = 0.8f)
-        day.isSunday -> palette.sundayColor.copy(alpha = 0.8f)
-        else -> palette.onSurface.copy(alpha = 0.6f)
-    }
-
-    val solarDayFontWeight = when {
-        day.isToday || day.isSaturday || day.isSunday -> FontWeight.Bold
-        else -> FontWeight.Medium
-    }
-
-    val density = LocalDensity.current
-    val cornerRadiusPx = remember(density) { with(density) { 12.dp.toPx() } }
-    val borderWidthPx = remember(density) { with(density) { 0.5.dp.toPx() } }
-    val dotRadiusPx = remember(density) { with(density) { 1.5.dp.toPx() } }
-    val dotBottomOffsetPx = remember(density) { with(density) { 4.dp.toPx() } }
-    val borderColor = remember(palette.outlineVariant) { palette.outlineVariant.copy(alpha = 0.4f) }
-
     val cellModifier = modifier
         .fillMaxHeight()
-        .clip(DayCellShape)
-        .drawBehind {
-            // Draw background
-            if (containerColor != Color.Transparent) {
-                drawRoundRect(
-                    color = containerColor,
-                    cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
-                )
-            }
-            // Draw border for current month days
-            if (day.isCurrentMonth) {
-                drawRoundRect(
-                    color = borderColor,
-                    cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx),
-                    style = Stroke(width = borderWidthPx)
-                )
-            }
-            // Draw special event dot at bottom center
-            if (day.hasSpecialEvent) {
-                drawCircle(
-                    color = EventDotColor,
-                    radius = dotRadiusPx,
-                    center = Offset(size.width / 2f, size.height - dotBottomOffsetPx)
-                )
-            }
-        }
+        .border(0.5.dp, borderColor)
         .clickable(
             enabled = day.isCurrentMonth,
             onClick = { onDayClick(day.year, day.month, day.day) }
         )
-        .padding(horizontal = 2.dp, vertical = 2.dp)
-        .then(if (!day.isCurrentMonth) Modifier.alpha(0.3f) else Modifier)
+        .padding(horizontal = 1.dp, vertical = 2.dp)
         .clearAndSetSemantics {
             contentDescription = day.contentDescription
         }
+
+    if (!day.isCurrentMonth) {
+        // Empty cell for days outside the month
+        Box(modifier = cellModifier)
+        return
+    }
+
+    val solarDayColor = when {
+        isSelected -> Color.White
+        day.isSunday -> Color(0xFFC62828)
+        day.isSaturday -> Color(0xFF8B0000)
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
     Column(
         modifier = cellModifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Ngày Dương
-        Text(
-            text = day.solarDayText,
-            color = solarDayColor,
-            fontSize = 15.sp,
-            fontWeight = solarDayFontWeight,
-            textAlign = TextAlign.Center
-        )
+        if (isSelected) {
+            // Selected circle badge matching Image 1
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(AppHeaderBlue),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = day.solarDayText,
+                    color = solarDayColor,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
 
-        // Ngày Âm
-        if (day.lunarDayText != null) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = day.lunarDayText,
-                color = lunarDayColor,
-                fontSize = 9.sp,
-                textAlign = TextAlign.Center,
-                fontWeight = if (day.isHoangDao && day.isCurrentMonth) FontWeight.Bold else FontWeight.Normal
-            )
+            if (day.lunarDayText != null) {
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = day.lunarDayText,
+                    color = AppHeaderBlue,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            if (day.isToday) {
+                Text(
+                    text = "Hôm nay",
+                    color = AppHeaderBlue,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
         } else {
-            Spacer(modifier = Modifier.height(13.dp)) // Maintain alignment
+            // Normal Day Cell
+            Text(
+                text = day.solarDayText,
+                color = solarDayColor,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            if (day.lunarDayText != null) {
+                val hasSubLabel = day.lunarSubLabel != null
+                Text(
+                    text = day.lunarDayText,
+                    color = if (hasSubLabel) Color(0xFF8B0000) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    textAlign = TextAlign.Center,
+                    fontWeight = if (hasSubLabel) FontWeight.SemiBold else FontWeight.Normal
+                )
+
+                if (day.lunarSubLabel != null) {
+                    Text(
+                        text = day.lunarSubLabel,
+                        color = Color(0xFFC62828),
+                        fontSize = 7.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectedDateScheduleCard(
+    selectedDate: LocalDate,
+    tasks: List<TaskEntity>,
+    modifier: Modifier = Modifier
+) {
+    val isToday = selectedDate == LocalDate.now()
+    val dateHeaderTitle = if (isToday) {
+        "Hôm nay, ${selectedDate.dayOfMonth} Thg ${selectedDate.monthValue}, ${selectedDate.year}"
+    } else {
+        val dow = when (selectedDate.dayOfWeek.value) {
+            1 -> "Thứ Hai"
+            2 -> "Thứ Ba"
+            3 -> "Thứ Tư"
+            4 -> "Thứ Năm"
+            5 -> "Thứ Sáu"
+            6 -> "Thứ Bảy"
+            else -> "Chủ Nhật"
+        }
+        "$dow, ${selectedDate.dayOfMonth} Thg ${selectedDate.monthValue}, ${selectedDate.year}"
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 6.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Drag handle pill at top
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = dateHeaderTitle,
+                fontSize = 15.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            if (tasks.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Không có lịch trình cho ngày này.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(tasks.size, key = { tasks[it].id }) { index ->
+                        val task = tasks[index]
+                        val barColor = if (index % 2 == 0) AppHeaderBlue else Color(0xFF9E8047)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Vertical colored bar indicator (Matching Image 1)
+                            Box(
+                                modifier = Modifier
+                                    .width(3.5.dp)
+                                    .height(36.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(barColor)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                val timeText = if (task.startTime != null) "${task.startTime} - " else ""
+                                Text(
+                                    text = "$timeText${task.title}",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (!task.location.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(1.dp))
+                                    Text(
+                                        text = task.location,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

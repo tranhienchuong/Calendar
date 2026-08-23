@@ -59,3 +59,17 @@ val ColorSaturdayLight = Color(0xFF0D47A1)
 val ColorSaturdayDark = Color(0xFF90CAF9)
 val ColorSundayLight = Color(0xFFD32F2F)
 val ColorSundayDark = Color(0xFFFFB4AB)
+
+// Màu giao diện Lịch Việt 2026 mới
+val AppHeaderBlue = Color(0xFF1565C0)
+val AppHeaderDarkBlue = Color(0xFF0D47A1)
+val LunarCardBgLight = Color(0xFFEBF3FB)
+val LunarCardBgDark = Color(0xFF1E293B)
+val TaskOngoingGreen = Color(0xFF2E7D32)
+val TaskOngoingBgLight = Color(0xFFE8F5E9)
+val TaskOngoingBgDark = Color(0xFF1B3820)
+val AiChatBubbleUser = Color(0xFF1976D2)
+val AiChatBubbleAiLight = Color(0xFFF0F2F5)
+val AiChatBubbleAiDark = Color(0xFF2D3748)
+val AppNavActiveBg = Color(0xFF0D47A1)
+

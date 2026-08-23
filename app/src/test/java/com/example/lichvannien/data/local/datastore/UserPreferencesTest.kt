@@ -51,13 +51,15 @@ class UserPreferencesTest {
         val birthday = userPreferences.birthdayFlow.first()
         assertThat(birthday.first).isEqualTo(0)
         assertThat(birthday.second).isEqualTo(0)
+        assertThat(birthday.third).isEqualTo(0)
     }
 
     @Test
     fun testSaveAndGetBirthday() = runTest(testDispatcher) {
-        userPreferences.saveBirthday(15, 8)
+        userPreferences.saveBirthday(15, 8, 1995)
         val birthday = userPreferences.birthdayFlow.first()
         assertThat(birthday.first).isEqualTo(15)
         assertThat(birthday.second).isEqualTo(8)
+        assertThat(birthday.third).isEqualTo(1995)
     }
 }

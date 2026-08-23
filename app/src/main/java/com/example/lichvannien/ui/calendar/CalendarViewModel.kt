@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lichvannien.domain.repository.SpecialDayRepository
+import com.example.lichvannien.domain.repository.TaskRepository
+import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.domain.util.AuspiciousCalculator
 import com.example.lichvannien.domain.util.LunarConverter
 import com.example.lichvannien.di.DefaultDispatcher
@@ -41,14 +43,17 @@ data class CalendarDayUiModel(
     val isSunday: Boolean,
     val isHoangDao: Boolean,
     val hasSpecialEvent: Boolean,
-    val contentDescription: String
+    val contentDescription: String,
+    val lunarSubLabel: String? = null
 )
 
 data class CalendarUiState(
     val displayedMonth: YearMonth = YearMonth.now(),
     val targetMonth: YearMonth = YearMonth.now(),
+    val selectedDate: LocalDate = LocalDate.now(),
     val daysList: ImmutableList<CalendarDayUiModel> = persistentListOf(),
     val monthDataMap: Map<YearMonth, ImmutableList<CalendarDayUiModel>> = emptyMap(),
+    val selectedDateTasks: List<TaskEntity> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -63,6 +68,7 @@ class CalendarViewModel @Inject constructor(
     private val lunarConverter: LunarConverter,
     private val auspiciousCalculator: AuspiciousCalculator,
     private val specialDayRepository: SpecialDayRepository,
+    private val taskRepository: TaskRepository? = null,
     @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
@@ -126,9 +132,54 @@ class CalendarViewModel @Inject constructor(
     private var preloadJob: Job? = null
     private val inFlightMonths = java.util.Collections.synchronizedSet(HashSet<YearMonth>())
 
+    private var taskJob: Job? = null
+
     init {
         val initialMonth = YearMonth.now()
         navigateToMonth(initialMonth)
+        observeTasksForDate(LocalDate.now())
+    }
+
+    fun selectDate(date: LocalDate) {
+        _uiState.update { it.copy(selectedDate = date) }
+        observeTasksForDate(date)
+    }
+
+    private fun observeTasksForDate(date: LocalDate) {
+        taskJob?.cancel()
+        val repo = taskRepository ?: return
+        taskJob = viewModelScope.launch {
+            val dateStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+            repo.getTasksForDate(dateStr).collect { tasks ->
+                _uiState.update { it.copy(selectedDateTasks = tasks) }
+            }
+        }
+    }
+
+    fun toggleTask(id: Long, isCompleted: Boolean) {
+        val repo = taskRepository ?: return
+        viewModelScope.launch {
+            repo.toggleTaskCompleted(id, isCompleted)
+        }
+    }
+
+    fun addNewTask(title: String, startTime: String?, endTime: String?, location: String?) {
+        val repo = taskRepository ?: return
+        val date = _uiState.value.selectedDate
+        val dateStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+        viewModelScope.launch {
+            val task = TaskEntity(
+                title = title,
+                date = dateStr,
+                startTime = startTime?.ifBlank { null },
+                endTime = endTime?.ifBlank { null },
+                location = location?.ifBlank { null },
+                isCompleted = false,
+                category = "WORK",
+                colorHex = 0xFF1976D2
+            )
+            repo.addTask(task)
+        }
     }
 
     fun getMonthDays(yearMonth: YearMonth): ImmutableList<CalendarDayUiModel>? {
@@ -289,10 +340,11 @@ class CalendarViewModel @Inject constructor(
                 val hasLunarEvent = LunarEventKey(lunar.month, lunar.day, lunar.isLeapMonth) in lunarEventKeys
                 val hasSpecialEvent = hasSolarEvent || hasLunarEvent
 
-                val lunarDayText = if (lunar.day == 1) {
-                    "${lunar.day}/${lunar.month}"
-                } else {
-                    lunar.day.toString()
+                val lunarDayText = "${lunar.day}/${lunar.month}"
+                val lunarSubLabel = when (lunar.day) {
+                    1 -> "Mùng Một"
+                    15 -> "Rằm T${lunar.month}"
+                    else -> null
                 }
 
                 val contentDescription = buildContentDescription(
@@ -320,7 +372,8 @@ class CalendarViewModel @Inject constructor(
                     isSunday = isSunday,
                     isHoangDao = rating.isHoangDao,
                     hasSpecialEvent = hasSpecialEvent,
-                    contentDescription = contentDescription
+                    contentDescription = contentDescription,
+                    lunarSubLabel = lunarSubLabel
                 )
             } else {
                 val contentDescription = buildContentDescription(

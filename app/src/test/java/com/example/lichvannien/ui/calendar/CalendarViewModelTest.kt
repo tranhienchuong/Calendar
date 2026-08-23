@@ -247,7 +247,7 @@ class CalendarViewModelTest {
         // Check non-event day
         val feb18 = febState.daysList.first { it.isCurrentMonth && it.day == 18 }
         assertThat(feb18.hasSpecialEvent).isFalse()
-        assertThat(feb18.lunarDayText).isEqualTo("2")
+        assertThat(feb18.lunarDayText).isEqualTo("2/1")
     }
 }
 
@@ -272,5 +272,13 @@ private class FakeSpecialDayRepository : SpecialDayRepository {
         lunarCallCount++
         if (delayMs > 0) delay(delayMs)
         return lunarEvents.filter { it.lunarMonth == month }
+    }
+
+    override suspend fun searchSpecialDays(query: String): List<SpecialDay> {
+        return (solarEvents + lunarEvents).filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    override suspend fun getAllSpecialDays(): List<SpecialDay> {
+        return solarEvents + lunarEvents
     }
 }

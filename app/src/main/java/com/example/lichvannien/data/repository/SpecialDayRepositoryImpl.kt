@@ -70,4 +70,34 @@ class SpecialDayRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override suspend fun searchSpecialDays(query: String): List<SpecialDay> = withContext(Dispatchers.IO) {
+        specialDayDao.searchSpecialDays(query).map { entity ->
+            SpecialDay(
+                name = entity.name,
+                icon = entity.icon,
+                solarMonth = entity.solarMonth,
+                solarDay = entity.solarDay,
+                lunarMonth = entity.lunarMonth,
+                lunarDay = entity.lunarDay,
+                isLunar = entity.isLunar,
+                leapMonth = entity.leapMonth
+            )
+        }
+    }
+
+    override suspend fun getAllSpecialDays(): List<SpecialDay> = withContext(Dispatchers.IO) {
+        specialDayDao.getAllSpecialDays().map { entity ->
+            SpecialDay(
+                name = entity.name,
+                icon = entity.icon,
+                solarMonth = entity.solarMonth,
+                solarDay = entity.solarDay,
+                lunarMonth = entity.lunarMonth,
+                lunarDay = entity.lunarDay,
+                isLunar = entity.isLunar,
+                leapMonth = entity.leapMonth
+            )
+        }
+    }
 }

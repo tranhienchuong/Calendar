@@ -7,4 +7,6 @@ interface SpecialDayRepository {
     suspend fun getEventsForLunarDate(month: Int, day: Int, isLeapMonth: Boolean): List<SpecialDay>
     suspend fun getEventsForSolarMonth(month: Int): List<SpecialDay>
     suspend fun getEventsForLunarMonth(month: Int): List<SpecialDay>
+    suspend fun searchSpecialDays(query: String): List<SpecialDay>
+    suspend fun getAllSpecialDays(): List<SpecialDay>
 }

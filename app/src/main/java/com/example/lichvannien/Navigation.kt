@@ -50,7 +50,10 @@ fun MainNavigation(userPreferences: UserPreferences) {
                 }
 
                 composable(Screen.Calendar.route) {
-                    MainScreen(navController = navController)
+                    MainScreen(
+                        navController = navController,
+                        userPreferences = userPreferences
+                    )
                 }
 
                 composable(

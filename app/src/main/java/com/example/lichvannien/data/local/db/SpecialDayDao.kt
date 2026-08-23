@@ -20,6 +20,12 @@ interface SpecialDayDao {
     @Query("SELECT * FROM special_days WHERE isLunar = 1 AND lunarMonth = :month AND lunarDay = :day AND leapMonth = :isLeap")
     fun getEventsForLunarDate(month: Int, day: Int, isLeap: Boolean): List<SpecialDayEntity>
 
+    @Query("SELECT * FROM special_days WHERE name LIKE '%' || :query || '%'")
+    fun searchSpecialDays(query: String): List<SpecialDayEntity>
+
+    @Query("SELECT * FROM special_days")
+    fun getAllSpecialDays(): List<SpecialDayEntity>
+
     @Query("SELECT COUNT(*) FROM special_days")
     fun getCount(): Int
 

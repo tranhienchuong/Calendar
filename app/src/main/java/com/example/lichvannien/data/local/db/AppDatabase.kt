@@ -9,16 +9,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.lichvannien.data.local.entity.SpecialDayEntity
-import com.example.lichvannien.data.local.entity.HoroscopeCacheEntity
+import com.example.lichvannien.data.local.entity.TaskEntity
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
 
-@Database(entities = [SpecialDayEntity::class, HoroscopeCacheEntity::class], version = 1, exportSchema = false)
+@Database(entities = [SpecialDayEntity::class, TaskEntity::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun specialDayDao(): SpecialDayDao
-    abstract fun horoscopeCacheDao(): HoroscopeCacheDao
+    abstract fun taskDao(): TaskDao
 
     companion object {
         @Volatile
@@ -31,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "lich_van_nien_db"
                 )
+                .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(context.applicationContext))
                 .build()
                 INSTANCE = instance
@@ -44,7 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
             super.onOpen(db)
             Executors.newSingleThreadExecutor().execute {
                 try {
-                    // 1. Kiểm tra xem bảng đã có dữ liệu chưa
+                    // 1. Preload special days if empty
                     val cursor = db.query("SELECT COUNT(*) FROM special_days")
                     var count = 0
                     if (cursor.moveToFirst()) {
@@ -52,7 +53,6 @@ abstract class AppDatabase : RoomDatabase() {
                     }
                     cursor.close()
 
-                    // 2. Nếu chưa có dữ liệu, tiến hành preload từ asset JSON
                     if (count == 0) {
                         val jsonString = context.assets.open("special_days.json").bufferedReader().use { it.readText() }
                         val json = Json { ignoreUnknownKeys = true }
@@ -80,12 +80,11 @@ abstract class AppDatabase : RoomDatabase() {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("AppDatabase", "Error preloading special days from assets", e)
+                    Log.e("AppDatabase", "Error preloading initial data from assets", e)
                 }
             }
         }
     }
-
 }
 
 @Serializable
