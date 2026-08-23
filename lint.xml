@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Ignore MissingTranslation since we only support Vietnamese -->
+    <issue id="MissingTranslation" severity="ignore" />
+    <!-- Ignore contentDescription check as we focus on offline lunar algorithms -->
+    <issue id="ContentDescription" severity="ignore" />
+    <!-- Ignore Google App Indexing warnings -->
+    <issue id="GoogleAppIndexingWarning" severity="ignore" />
+</lint>

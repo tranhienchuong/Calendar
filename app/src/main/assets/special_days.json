@@ -1,0 +1,269 @@
+[
+  {
+    "name": "Tết Dương lịch",
+    "solarMonth": 1,
+    "solarDay": 1,
+    "isLunar": false,
+    "icon": "🎉"
+  },
+  {
+    "name": "Ngày lễ tình nhân Valentine",
+    "solarMonth": 2,
+    "solarDay": 14,
+    "isLunar": false,
+    "icon": "💖"
+  },
+  {
+    "name": "Ngày Quốc tế Phụ nữ",
+    "solarMonth": 3,
+    "solarDay": 8,
+    "isLunar": false,
+    "icon": "👩"
+  },
+  {
+    "name": "Ngày thành lập Đoàn TNCS Hồ Chí Minh",
+    "solarMonth": 3,
+    "solarDay": 26,
+    "isLunar": false,
+    "icon": "⚡"
+  },
+  {
+    "name": "Ngày Giải phóng miền Nam",
+    "solarMonth": 4,
+    "solarDay": 30,
+    "isLunar": false,
+    "icon": "🇻🇳"
+  },
+  {
+    "name": "Ngày Quốc tế Lao động",
+    "solarMonth": 5,
+    "solarDay": 1,
+    "isLunar": false,
+    "icon": "🛠️"
+  },
+  {
+    "name": "Ngày Chiến thắng Điện Biên Phủ",
+    "solarMonth": 5,
+    "solarDay": 7,
+    "isLunar": false,
+    "icon": "🎖️"
+  },
+  {
+    "name": "Ngày thành lập Đội TNTP Hồ Chí Minh",
+    "solarMonth": 5,
+    "solarDay": 15,
+    "isLunar": false,
+    "icon": "👦"
+  },
+  {
+    "name": "Ngày sinh Chủ tịch Hồ Chí Minh",
+    "solarMonth": 5,
+    "solarDay": 19,
+    "isLunar": false,
+    "icon": "💐"
+  },
+  {
+    "name": "Ngày Quốc tế Thiếu nhi",
+    "solarMonth": 6,
+    "solarDay": 1,
+    "isLunar": false,
+    "icon": "🧸"
+  },
+  {
+    "name": "Ngày Báo chí Cách mạng Việt Nam",
+    "solarMonth": 6,
+    "solarDay": 21,
+    "isLunar": false,
+    "icon": "📰"
+  },
+  {
+    "name": "Ngày Gia đình Việt Nam",
+    "solarMonth": 6,
+    "solarDay": 28,
+    "isLunar": false,
+    "icon": "👨‍👩‍👧‍👦"
+  },
+  {
+    "name": "Ngày Thương binh Liệt sĩ",
+    "solarMonth": 7,
+    "solarDay": 27,
+    "isLunar": false,
+    "icon": "🕯️"
+  },
+  {
+    "name": "Ngày Cách mạng Tháng Tám thành công",
+    "solarMonth": 8,
+    "solarDay": 19,
+    "isLunar": false,
+    "icon": "✊"
+  },
+  {
+    "name": "Ngày Quốc khánh Việt Nam",
+    "solarMonth": 9,
+    "solarDay": 2,
+    "isLunar": false,
+    "icon": "🇻🇳"
+  },
+  {
+    "name": "Ngày Giải phóng Thủ đô",
+    "solarMonth": 10,
+    "solarDay": 10,
+    "isLunar": false,
+    "icon": "🏰"
+  },
+  {
+    "name": "Ngày Phụ nữ Việt Nam",
+    "solarMonth": 10,
+    "solarDay": 20,
+    "isLunar": false,
+    "icon": "🌹"
+  },
+  {
+    "name": "Ngày Pháp luật Việt Nam",
+    "solarMonth": 11,
+    "solarDay": 9,
+    "isLunar": false,
+    "icon": "⚖️"
+  },
+  {
+    "name": "Ngày Nhà giáo Việt Nam",
+    "solarMonth": 11,
+    "solarDay": 20,
+    "isLunar": false,
+    "icon": "👨‍🏫"
+  },
+  {
+    "name": "Ngày thành lập Quân đội Nhân dân Việt Nam",
+    "solarMonth": 12,
+    "solarDay": 22,
+    "isLunar": false,
+    "icon": "🪖"
+  },
+  {
+    "name": "Lễ Giáng sinh",
+    "solarMonth": 12,
+    "solarDay": 25,
+    "isLunar": false,
+    "icon": "🎄"
+  },
+  {
+    "name": "Tết Nguyên Đán (Mùng 1 Tết)",
+    "lunarMonth": 1,
+    "lunarDay": 1,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🧧"
+  },
+  {
+    "name": "Tết Nguyên Đán (Mùng 2 Tết)",
+    "lunarMonth": 1,
+    "lunarDay": 2,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🧧"
+  },
+  {
+    "name": "Tết Nguyên Đán (Mùng 3 Tết)",
+    "lunarMonth": 1,
+    "lunarDay": 3,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🧧"
+  },
+  {
+    "name": "Tết Nguyên tiêu (Rằm tháng Giêng)",
+    "lunarMonth": 1,
+    "lunarDay": 15,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🏮"
+  },
+  {
+    "name": "Tết Hàn thực",
+    "lunarMonth": 3,
+    "lunarDay": 3,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🍡"
+  },
+  {
+    "name": "Giỗ tổ Hùng Vương",
+    "lunarMonth": 3,
+    "lunarDay": 10,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "👑"
+  },
+  {
+    "name": "Lễ Phật đản",
+    "lunarMonth": 4,
+    "lunarDay": 15,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🪷"
+  },
+  {
+    "name": "Tết Đoan ngọ",
+    "lunarMonth": 5,
+    "lunarDay": 5,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🌾"
+  },
+  {
+    "name": "Lễ Thất tịch",
+    "lunarMonth": 7,
+    "lunarDay": 7,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🌌"
+  },
+  {
+    "name": "Lễ Vu Lan",
+    "lunarMonth": 7,
+    "lunarDay": 15,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🪔"
+  },
+  {
+    "name": "Tết Trung thu",
+    "lunarMonth": 8,
+    "lunarDay": 15,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🥮"
+  },
+  {
+    "name": "Tết Trùng cửu",
+    "lunarMonth": 9,
+    "lunarDay": 9,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🌼"
+  },
+  {
+    "name": "Tết Thường tân",
+    "lunarMonth": 10,
+    "lunarDay": 10,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🌾"
+  },
+  {
+    "name": "Tết Hạ nguyên",
+    "lunarMonth": 10,
+    "lunarDay": 15,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🏮"
+  },
+  {
+    "name": "Ngày đưa ông Công ông Táo chầu trời",
+    "lunarMonth": 12,
+    "lunarDay": 23,
+    "isLunar": true,
+    "leapMonth": false,
+    "icon": "🐟"
+  }
+]
