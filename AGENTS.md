@@ -4,15 +4,20 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 
 ## Build
 
+- Use the shortest matching gate while developing; Gradle's daemon, configuration cache, build cache, and file-system watching are intentionally enabled for warm runs.
+- Compile-only feedback after a UI or Kotlin edit: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task compile`.
 - Build the current debug APK: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task build`
 - The expected artifact is `app\build\outputs\apk\debug\app-debug.apk`.
+- Compile the production-like app and the Macrobenchmark test APK: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task macrobenchmark-build`.
+- During Macrobenchmark test development, use the faster Kotlin-only gate first: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task macrobenchmark-compile`.
 - Treat a non-zero script exit code as a failed build. Report the Gradle task and the first actionable error; do not install an APK from a failed or stale build.
 
 ## Verification
 
-- Run focused unit tests while changing business logic: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task unit-test`.
+- Run focused unit tests while changing business logic: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task test-class -Tests <fully.qualified.TestClass>`.
+- Run the full local unit suite: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task unit-test`.
 - Run lint for UI, resource, manifest, Gradle, or dependency changes: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task lint`.
-- Before handing off a feature or fix, run both unit tests and lint. State the exact commands and result.
+- Before handing off a feature or fix, run the combined local quality gate once: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task verify`. State the exact commands and result.
 - Run instrumented tests only on a dedicated test device, or when the user explicitly authorizes the connected device. Instrumented tests install APKs and may alter app-local test data.
 
 ## Real-device ADB
@@ -23,6 +28,7 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 - Build and install the debug APK while preserving package data: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task install -Serial <serial> -AllowDeviceMutation`.
 - Launch and wait for the main activity: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task launch -Serial <serial>`.
 - Run the full instrumented suite on the selected device only: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task connected-test -Serial <serial> -AllowDeviceMutation`.
+- Run Macrobenchmark only after explicit device-mutation authorization: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task macrobenchmark -Serial <serial> -AllowDeviceMutation`. It installs the benchmark app/test APK and requires the selected physical device to be the only ready ADB device.
 - `-AllowDeviceMutation` is an explicit acknowledgement that install/test commands modify the selected device. Never use it without user authorization.
 
 ## Performance reproduction
@@ -30,6 +36,9 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 - For touch or animation reports, collect a repeatable baseline on the real device: reset `gfxinfo`, perform the exact gesture, then capture `gfxinfo` again.
 - Record the device model, Android version, gesture count/duration, and `Janky frames`, frame percentiles, `High input latency`, `Slow UI thread`, and GPU percentiles.
 - Restore any temporary device settings before handoff, including all three animation scales.
+- Run the CalendarScreen month-swipe regression gate with an installed app whose onboarding is already complete: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\measure-calendar-swipe.ps1 -Serial <serial> -Count 10 -Direction Left -DurationMs 300`. The gate validates the header after every swipe, not merely the net final month.
+- `Left` advances to the next month and `Right` goes to the previous month. The script launches the existing activity, but never installs an APK, clears app data, or changes animation scales; it shares `scripts/lib/android-device.ps1` with `android.ps1` and rejects `emulator-*` and other QEMU devices.
+- The gate exits `0` on pass and `1` on fail. It writes only parsed JSON to the system temp directory by default; an explicit `-OutputPath` must point outside the source tree. The ADB gate does not measure visual frame timing; `:benchmark:connectedBenchmarkAndroidTest` uses `FrameTimingMetric` on the physical device for that signal.
 
 ## Guardrails
 

@@ -1,10 +1,12 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('build', 'unit-test', 'lint', 'device-check', 'install', 'launch', 'connected-test', 'gfxinfo')]
+    [ValidateSet('compile', 'build', 'unit-test', 'test-class', 'lint', 'verify', 'device-check', 'install', 'launch', 'connected-test', 'gfxinfo', 'macrobenchmark-compile', 'macrobenchmark-build', 'macrobenchmark')]
     [string]$Task,
 
     [string]$Serial,
+
+    [string[]]$Tests,
 
     [switch]$AllowDeviceMutation
 )
@@ -13,40 +15,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+. (Join-Path $PSScriptRoot 'lib\android-device.ps1')
 $packageName = 'com.example.lichvannien'
 $activityName = "$packageName/.MainActivity"
 $debugApk = Join-Path $projectRoot 'app\build\outputs\apk\debug\app-debug.apk'
 $testApk = Join-Path $projectRoot 'app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk'
-
-function Get-AdbPath {
-    $candidates = @()
-    if ($env:ANDROID_SDK_ROOT) {
-        $candidates += Join-Path $env:ANDROID_SDK_ROOT 'platform-tools\adb.exe'
-    }
-    if ($env:ANDROID_HOME) {
-        $candidates += Join-Path $env:ANDROID_HOME 'platform-tools\adb.exe'
-    }
-
-    $localProperties = Join-Path $projectRoot 'local.properties'
-    if (Test-Path -LiteralPath $localProperties) {
-        $sdkLine = Get-Content -LiteralPath $localProperties |
-            Where-Object { $_ -match '^sdk\.dir=' } |
-            Select-Object -First 1
-        if ($sdkLine) {
-            $sdkRoot = ($sdkLine -replace '^sdk\.dir=', '').Trim()
-            $sdkRoot = $sdkRoot.Replace('\:', ':').Replace('\\', '\')
-            $candidates += Join-Path $sdkRoot 'platform-tools\adb.exe'
-        }
-    }
-
-    foreach ($candidate in $candidates | Select-Object -Unique) {
-        if (Test-Path -LiteralPath $candidate) {
-            return (Resolve-Path -LiteralPath $candidate).Path
-        }
-    }
-
-    throw 'Cannot find adb.exe. Set ANDROID_SDK_ROOT or add sdk.dir to local.properties.'
-}
 
 function Invoke-Checked {
     param(
@@ -77,42 +50,6 @@ function Invoke-Gradle {
     }
 }
 
-function Get-PhysicalSerial {
-    param([Parameter(Mandatory)] [string]$AdbPath)
-
-    if ($Serial -and $Serial.StartsWith('emulator-', [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Refusing emulator serial '$Serial'. Connect a physical test device instead."
-    }
-
-    $deviceLines = & $AdbPath devices
-    if ($LASTEXITCODE -ne 0) {
-        throw 'adb devices failed.'
-    }
-
-    $physicalSerials = @(
-        $deviceLines |
-            Where-Object { $_ -match '^(\S+)\s+device$' } |
-            ForEach-Object { ($_.Trim() -split '\s+')[0] } |
-            Where-Object { -not $_.StartsWith('emulator-', [System.StringComparison]::OrdinalIgnoreCase) }
-    )
-
-    if ($Serial) {
-        if ($physicalSerials -notcontains $Serial) {
-            throw "Physical device '$Serial' is not connected and authorized. Run adb devices and unlock/authorize the device."
-        }
-        return $Serial
-    }
-
-    if ($physicalSerials.Count -eq 0) {
-        throw 'No authorized physical device is connected. Enable USB debugging, unlock the device, accept the RSA prompt, then run adb devices.'
-    }
-    if ($physicalSerials.Count -gt 1) {
-        throw "Multiple physical devices are connected: $($physicalSerials -join ', '). Re-run with -Serial <serial>."
-    }
-
-    return $physicalSerials[0]
-}
-
 function Require-DeviceMutationApproval {
     if (-not $AllowDeviceMutation) {
         throw 'This task installs or runs tests on the device. Re-run with -AllowDeviceMutation only after user authorization.'
@@ -120,47 +57,63 @@ function Require-DeviceMutationApproval {
 }
 
 switch ($Task) {
+    'compile' {
+        Invoke-Gradle -Arguments @(':app:compileDebugKotlin')
+    }
     'build' {
-        Invoke-Gradle -Arguments @(':app:assembleDebug', '--no-daemon')
+        Invoke-Gradle -Arguments @(':app:assembleDebug')
         if (-not (Test-Path -LiteralPath $debugApk)) {
             throw "Build completed without the expected APK: $debugApk"
         }
         Write-Output "Debug APK: $debugApk"
     }
     'unit-test' {
-        Invoke-Gradle -Arguments @(':app:testDebugUnitTest', '--no-daemon')
+        Invoke-Gradle -Arguments @(':app:testDebugUnitTest')
+    }
+    'test-class' {
+        if ($Tests.Count -eq 0) {
+            throw 'test-class requires at least one fully qualified Gradle test pattern via -Tests.'
+        }
+        $testArguments = @(':app:testDebugUnitTest')
+        foreach ($testPattern in $Tests) {
+            $testArguments += '--tests'
+            $testArguments += $testPattern
+        }
+        Invoke-Gradle -Arguments $testArguments
     }
     'lint' {
-        Invoke-Gradle -Arguments @(':app:lintDebug', '--no-daemon')
+        Invoke-Gradle -Arguments @(':app:lintDebug')
         Write-Output "Lint report: $(Join-Path $projectRoot 'app\build\reports\lint-results-debug.html')"
     }
+    'verify' {
+        Invoke-Gradle -Arguments @(':app:testDebugUnitTest', ':app:lintDebug')
+        Write-Output "Lint report: $(Join-Path $projectRoot 'app\build\reports\lint-results-debug.html')"
+        Write-Output "Unit-test report: $(Join-Path $projectRoot 'app\build\reports\tests\testDebugUnitTest\index.html')"
+    }
     'device-check' {
-        $adb = Get-AdbPath
-        $targetSerial = Get-PhysicalSerial -AdbPath $adb
-        Invoke-Checked -FilePath $adb -Arguments @('-s', $targetSerial, 'get-state')
-        $model = (& $adb -s $targetSerial shell getprop ro.product.model).Trim()
-        $androidVersion = (& $adb -s $targetSerial shell getprop ro.build.version.release).Trim()
-        Write-Output "Device: $targetSerial"
-        Write-Output "Model: $model"
-        Write-Output "Android: $androidVersion"
+        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
+        $device = Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial
+        Write-Output "Device: $($device.Serial)"
+        Write-Output "Model: $($device.Model)"
+        Write-Output "Android: $($device.Android)"
     }
     'install' {
         Require-DeviceMutationApproval
-        $adb = Get-AdbPath
-        $targetSerial = Get-PhysicalSerial -AdbPath $adb
-        Invoke-Gradle -Arguments @(':app:assembleDebug', '--no-daemon')
+        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
+        $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
+        Invoke-Gradle -Arguments @(':app:assembleDebug')
         Invoke-Checked -FilePath $adb -Arguments @('-s', $targetSerial, 'install', '-r', $debugApk)
     }
     'launch' {
-        $adb = Get-AdbPath
-        $targetSerial = Get-PhysicalSerial -AdbPath $adb
-        Invoke-Checked -FilePath $adb -Arguments @('-s', $targetSerial, 'shell', 'am', 'start', '-W', '-n', $activityName)
+        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
+        $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
+        [void](Start-AndroidActivity -AdbPath $adb -Serial $targetSerial -ActivityName $activityName)
     }
     'connected-test' {
         Require-DeviceMutationApproval
-        $adb = Get-AdbPath
-        $targetSerial = Get-PhysicalSerial -AdbPath $adb
-        Invoke-Gradle -Arguments @(':app:assembleDebug', ':app:assembleDebugAndroidTest', '--no-daemon')
+        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
+        $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
+        Invoke-Gradle -Arguments @(':app:assembleDebug', ':app:assembleDebugAndroidTest')
         if (-not (Test-Path -LiteralPath $testApk)) {
             throw "Instrumented-test APK not found: $testApk"
         }
@@ -169,8 +122,21 @@ switch ($Task) {
         Invoke-Checked -FilePath $adb -Arguments @('-s', $targetSerial, 'shell', 'am', 'instrument', '-w', '-r', "$packageName.test/androidx.test.runner.AndroidJUnitRunner")
     }
     'gfxinfo' {
-        $adb = Get-AdbPath
-        $targetSerial = Get-PhysicalSerial -AdbPath $adb
+        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
+        $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
         Invoke-Checked -FilePath $adb -Arguments @('-s', $targetSerial, 'shell', 'dumpsys', 'gfxinfo', $packageName)
+    }
+    'macrobenchmark-build' {
+        Invoke-Gradle -Arguments @(':app:assembleBenchmark', ':benchmark:assembleBenchmark')
+    }
+    'macrobenchmark-compile' {
+        Invoke-Gradle -Arguments @(':benchmark:compileBenchmarkKotlin')
+    }
+    'macrobenchmark' {
+        Require-DeviceMutationApproval
+        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
+        $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
+        Assert-OnlySelectedAndroidDeviceConnected -AdbPath $adb -Serial $targetSerial
+        Invoke-Gradle -Arguments @(':benchmark:connectedBenchmarkAndroidTest')
     }
 }
