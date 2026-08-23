@@ -491,6 +491,7 @@ fun MainScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChangeBirthdayDialog(
     currentDay: Int,
@@ -499,12 +500,46 @@ private fun ChangeBirthdayDialog(
     onDismiss: () -> Unit,
     onSave: (day: Int, month: Int, year: Int) -> Unit
 ) {
-    var day by remember { mutableIntStateOf(currentDay) }
-    var month by remember { mutableIntStateOf(currentMonth) }
-    var year by remember { mutableIntStateOf(currentYear) }
+    var dayStr by remember { mutableStateOf(currentDay.toString()) }
+    var monthStr by remember { mutableStateOf(currentMonth.toString()) }
+    var yearStr by remember { mutableStateOf(currentYear.toString()) }
 
-    val calculatedZodiac = remember(year) {
-        EasternFengShuiHelper.getZodiacInfo(year)
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val parsedYear = yearStr.toIntOrNull() ?: currentYear
+    val calculatedZodiac = remember(parsedYear) {
+        EasternFengShuiHelper.getZodiacInfo(parsedYear)
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = System.currentTimeMillis()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val localDate = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                        dayStr = localDate.dayOfMonth.toString()
+                        monthStr = localDate.monthValue.toString()
+                        yearStr = localDate.year.toString()
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Xác nhận")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Hủy")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 
     AlertDialog(
@@ -512,36 +547,62 @@ private fun ChangeBirthdayDialog(
         title = { Text("Đổi ngày sinh & Bản mệnh", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Nhập ngày, tháng, năm sinh để tra cứu Can Chi, 12 Con Giáp và Mệnh Ngũ Hành:")
+                Button(
+                    onClick = { showDatePicker = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppHeaderBlue.copy(alpha = 0.12f),
+                        contentColor = AppHeaderBlue
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Chọn nhanh từ Lịch", fontWeight = FontWeight.SemiBold)
+                }
+
+                Text(
+                    text = "Hoặc chỉnh sửa trực tiếp ngày / tháng / năm:",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
-                        value = day.toString(),
-                        onValueChange = {
-                            val d = it.toIntOrNull()
-                            if (d != null && d in 1..31) day = d
+                        value = dayStr,
+                        onValueChange = { input ->
+                            if (input.all { it.isDigit() } && input.length <= 2) {
+                                dayStr = input
+                            }
                         },
                         label = { Text("Ngày") },
                         singleLine = true,
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
-                        value = month.toString(),
-                        onValueChange = {
-                            val m = it.toIntOrNull()
-                            if (m != null && m in 1..12) month = m
+                        value = monthStr,
+                        onValueChange = { input ->
+                            if (input.all { it.isDigit() } && input.length <= 2) {
+                                monthStr = input
+                            }
                         },
                         label = { Text("Tháng") },
                         singleLine = true,
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
-                        value = year.toString(),
-                        onValueChange = {
-                            val y = it.toIntOrNull()
-                            if (y != null && y in 1900..2100) year = y
+                        value = yearStr,
+                        onValueChange = { input ->
+                            if (input.all { it.isDigit() } && input.length <= 4) {
+                                yearStr = input
+                            }
                         },
                         label = { Text("Năm") },
                         singleLine = true,
@@ -565,7 +626,7 @@ private fun ChangeBirthdayDialog(
                         )
                         Column {
                             Text(
-                                text = "Tuổi ${calculatedZodiac.canChiYear} ($year)",
+                                text = "Tuổi ${calculatedZodiac.canChiYear} ($parsedYear)",
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -581,7 +642,12 @@ private fun ChangeBirthdayDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onSave(day, month, year) },
+                onClick = {
+                    val finalDay = dayStr.toIntOrNull()?.coerceIn(1, 31) ?: currentDay
+                    val finalMonth = monthStr.toIntOrNull()?.coerceIn(1, 12) ?: currentMonth
+                    val finalYear = yearStr.toIntOrNull()?.coerceIn(1900, 2100) ?: currentYear
+                    onSave(finalDay, finalMonth, finalYear)
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = AppHeaderBlue)
             ) {
                 Text("Lưu lại")
