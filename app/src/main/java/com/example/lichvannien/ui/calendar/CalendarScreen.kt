@@ -1,19 +1,18 @@
 package com.example.lichvannien.ui.calendar
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +21,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,30 +30,55 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
-import com.example.lichvannien.theme.*
 import com.example.lichvannien.domain.model.CalendarDay
-import java.time.YearMonth
+import com.example.lichvannien.theme.*
 import kotlinx.collections.immutable.ImmutableList
-import androidx.compose.material.icons.filled.Today
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.launch
+import java.time.YearMonth
 
-@OptIn(ExperimentalAnimationApi::class)
+private const val BASE_YEAR = 2000
+private const val TOTAL_PAGES = 2400 // Covers years 2000 to 2200
+
+private fun pageFromYearMonth(yearMonth: YearMonth): Int {
+    return (yearMonth.year - BASE_YEAR) * 12 + (yearMonth.monthValue - 1)
+}
+
+private fun yearMonthFromPage(page: Int): YearMonth {
+    val year = BASE_YEAR + page / 12
+    val month = (page % 12) + 1
+    return YearMonth.of(year, month)
+}
+
 @Composable
 fun CalendarScreen(
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
-    val currentMonthYear by viewModel.currentMonthYear.collectAsStateWithLifecycle()
-    val daysList by viewModel.daysList.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
 
-    var direction by remember { mutableStateOf(1) } // 1: next, -1: prev
+    val initialPage = remember {
+        val now = YearMonth.now()
+        pageFromYearMonth(now)
+    }
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { TOTAL_PAGES })
 
-    var dragAmountX by remember { mutableStateOf(0f) }
-    var isSwipeTriggered by remember { mutableStateOf(false) }
+    // Active month for header display: updates immediately during drag/settling
+    val activeMonth = remember(pagerState.currentPage, pagerState.targetPage, pagerState.isScrollInProgress) {
+        if (pagerState.isScrollInProgress) {
+            yearMonthFromPage(pagerState.targetPage)
+        } else {
+            yearMonthFromPage(pagerState.currentPage)
+        }
+    }
+
+    // Sync ViewModel preload when page settles
+    LaunchedEffect(pagerState.currentPage) {
+        val settledMonth = yearMonthFromPage(pagerState.currentPage)
+        viewModel.loadMonth(settledMonth.year, settledMonth.monthValue)
+    }
 
     Column(
         modifier = modifier
@@ -62,7 +88,9 @@ fun CalendarScreen(
     ) {
         // Header Section
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -71,11 +99,14 @@ fun CalendarScreen(
                 modifier = Modifier.weight(1f)
             ) {
                 IconButton(onClick = {
-                    direction = -1
-                    viewModel.goToPreviousMonth()
+                    if (pagerState.currentPage > 0) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }
                 }) {
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowLeft,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Previous Month"
                     )
                 }
@@ -83,8 +114,8 @@ fun CalendarScreen(
                 Text(
                     text = stringResource(
                         R.string.calendar_header_format,
-                        currentMonthYear.monthValue,
-                        currentMonthYear.year
+                        activeMonth.monthValue,
+                        activeMonth.year
                     ),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
@@ -92,11 +123,14 @@ fun CalendarScreen(
                 )
 
                 IconButton(onClick = {
-                    direction = 1
-                    viewModel.goToNextMonth()
+                    if (pagerState.currentPage < TOTAL_PAGES - 1) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    }
                 }) {
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Next Month"
                     )
                 }
@@ -104,9 +138,10 @@ fun CalendarScreen(
 
             FilledTonalButton(
                 onClick = {
-                    val now = YearMonth.now()
-                    direction = if (now.isAfter(currentMonthYear)) 1 else -1
-                    viewModel.goToToday()
+                    val todayPage = pageFromYearMonth(YearMonth.now())
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(todayPage)
+                    }
                 },
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -131,42 +166,11 @@ fun CalendarScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Calendar Grid wrapped in a beautiful modern ElevatedCard with Swipe Gesture
+        // Calendar Card containing Weekday Header & HorizontalPager for Months
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .pointerInput(currentMonthYear) {
-                    detectHorizontalDragGestures(
-                        onDragStart = {
-                            dragAmountX = 0f
-                            isSwipeTriggered = false
-                        },
-                        onDragEnd = {
-                            dragAmountX = 0f
-                            isSwipeTriggered = false
-                        },
-                        onDragCancel = {
-                            dragAmountX = 0f
-                            isSwipeTriggered = false
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            if (!isSwipeTriggered) {
-                                dragAmountX += dragAmount
-                                if (dragAmountX > 100f) { // Swipe right -> previous month
-                                    isSwipeTriggered = true
-                                    direction = -1
-                                    viewModel.goToPreviousMonth()
-                                } else if (dragAmountX < -100f) { // Swipe left -> next month
-                                    isSwipeTriggered = true
-                                    direction = 1
-                                    viewModel.goToNextMonth()
-                                }
-                            }
-                        }
-                    )
-                },
+                .weight(1f),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -177,7 +181,7 @@ fun CalendarScreen(
                     .fillMaxSize()
                     .padding(12.dp)
             ) {
-                // Weekdays Header Grid
+                // Weekdays Header Row
                 val isDark = isSystemInDarkTheme()
                 val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
                 val weekdays = remember(isDark, onSurfaceVariant) {
@@ -217,37 +221,58 @@ fun CalendarScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Days Grid with horizontal slide animations
-                AnimatedContent(
-                    targetState = daysList,
-                    transitionSpec = {
-                        if (direction > 0) {
-                            (slideInHorizontally { width -> width } + fadeIn() ) togetherWith
-                                    (slideOutHorizontally { width -> -width } + fadeOut())
-                        } else {
-                            (slideInHorizontally { width -> -width } + fadeIn() ) togetherWith
-                                    (slideOutHorizontally { width -> width } + fadeOut())
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                ) { targetDays ->
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(7),
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(
-                            items = targetDays,
-                            key = { day -> "${day.solarDate.year}-${day.solarDate.month}-${day.solarDate.day}" }
-                        ) { day ->
-                            DayCell(
-                                day = day,
-                                onClick = {
-                                    onDayClick(day.solarDate.year, day.solarDate.month, day.solarDate.day)
-                                }
-                            )
-                        }
+                // High performance HorizontalPager for smooth 1:1 touch tracking and snapping
+                HorizontalPager(
+                    state = pagerState,
+                    beyondViewportPageCount = 1,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) { page ->
+                    val pageMonth = remember(page) { yearMonthFromPage(page) }
+                    val days = uiState.monthDataMap[pageMonth] ?: viewModel.getMonthDays(pageMonth) ?: persistentListOf()
+
+                    CalendarGrid(
+                        days = days,
+                        onDayClick = onDayClick,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CalendarGrid(
+    days: ImmutableList<CalendarDay>,
+    onDayClick: (year: Int, month: Int, day: Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        for (rowIndex in 0 until 6) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                for (colIndex in 0 until 7) {
+                    val dayIndex = rowIndex * 7 + colIndex
+                    if (dayIndex < days.size) {
+                        val day = days[dayIndex]
+                        DayCell(
+                            day = day,
+                            onClick = {
+                                onDayClick(day.solarDate.year, day.solarDate.month, day.solarDate.day)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -334,8 +359,7 @@ fun DayCell(
     }
 
     val cellModifier = modifier
-        .sizeIn(minWidth = 40.dp, minHeight = 48.dp)
-        .aspectRatio(0.7f)
+        .fillMaxHeight()
         .clip(RoundedCornerShape(12.dp))
         .background(containerColor)
         .then(
@@ -350,7 +374,7 @@ fun DayCell(
             }
         )
         .clickable(enabled = day.isCurrentMonth, onClick = onClick)
-        .padding(horizontal = 2.dp, vertical = 4.dp)
+        .padding(horizontal = 2.dp, vertical = 2.dp)
         .then(if (!day.isCurrentMonth) Modifier.alpha(0.3f) else Modifier)
         .clearAndSetSemantics {
             contentDescription = accessibilityDescription
