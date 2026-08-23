@@ -90,7 +90,7 @@ function Try-GetCalendarHeader {
         $hierarchy = Get-UiHierarchy
         $headerMatch = [regex]::Match(
             $hierarchy,
-            '(?i)Tháng\s+(?<month>\d{1,2})\s*,\s*(?<year>\d{4})'
+            '(?i)Th\u00E1ng\s+(?<month>\d{1,2})\s*,\s*(?<year>\d{4})'
         )
         if (-not $headerMatch.Success) {
             return $null
@@ -122,7 +122,7 @@ function Format-MonthHeader {
     if ($null -eq $Header) {
         return 'NOT FOUND'
     }
-    return ('Tháng {0}, {1}' -f $Header.Month, $Header.Year)
+    return ((('Th' + [char]0x00E1 + 'ng {0}, {1}') -f $Header.Month, $Header.Year))
 }
 
 function Wait-CalendarHeader {
@@ -558,7 +558,7 @@ $result = [ordered]@{
     }
     Checks = $checks
     UnmeasuredCriteria = @(
-        'This ADB gate does not measure visual frame timing. Run :benchmark:connectedBenchmarkAndroidTest to collect FrameTimingMetric.'
+        'This ADB gate does not measure visual frame timing.'
     )
     Gate = $gateStatus
     ResultPath = $resultPath
@@ -588,7 +588,7 @@ foreach ($check in $checks) {
 }
 Write-Output ''
 Write-Output "Gate: $gateStatus"
-Write-Output 'Visual frame timing: measured separately by :benchmark:connectedBenchmarkAndroidTest (FrameTimingMetric).'
+Write-Output 'Visual frame timing: NOT MEASURED.'
 Write-Output "Result JSON: $resultPath"
 
 if (-not $gatePassed) {

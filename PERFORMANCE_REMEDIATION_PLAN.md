@@ -26,7 +26,7 @@ Hai nguồn chính cần xử lý là:
 
 1. Tạo `scripts/measure-calendar-swipe.ps1` nhận `-Serial`, số lượt vuốt, chiều vuốt và thời lượng gesture. Script chỉ chạy trên thiết bị thật, reset `gfxinfo`, thực hiện lượt vuốt xác định, lấy header tháng cuối và in các chỉ số frame quan trọng.
 2. Thêm kiểm tra pass/fail theo các ngưỡng ở trên. Lưu kết quả đo dạng text/JSON ngoài source tree.
-3. Bổ sung Macrobenchmark `FrameTimingMetric` cho chuỗi đổi tháng trong build benchmark/profileable, để không phụ thuộc hoàn toàn vào `adb input`.
+3. Khi cần xác nhận phản hồi thị giác, thu trace Perfetto trên thiết bị thật sau khi có phê duyệt; không thêm module benchmark vào app.
 
 Hoàn thành khi một lệnh có thể tái hiện lỗi hiện tại và chuyển xanh sau khi sửa:
 
@@ -64,7 +64,7 @@ Kiểm chứng bằng Layout Inspector/Compose tracing: khi đổi tháng chỉ 
 
 1. Tạo Baseline Profile cho luồng mở app → lịch → đổi tháng để giảm JIT ở lần tương tác đầu.
 2. Đo cold start, lần đổi tháng đầu và chuỗi 10 lần đổi tháng trên thiết bị thật; so sánh với baseline đã ghi ở Pha 1.
-3. Chạy unit test, lint, UI/instrumented test, và Macrobenchmark. Kiểm tra thủ công TalkBack, dark mode, ngày lễ và tháng nhuận.
+3. Chạy unit test, lint, UI/instrumented test, và regression gate vuốt tháng. Kiểm tra thủ công TalkBack, dark mode, ngày lễ và tháng nhuận.
 4. Xóa toàn bộ probe/timing tạm thời. Cập nhật tài liệu đo hiệu năng và ghi rõ ngưỡng đạt được.
 
 ## Thứ tự triển khai và điểm dừng

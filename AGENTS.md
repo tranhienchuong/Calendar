@@ -8,8 +8,6 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 - Compile-only feedback after a UI or Kotlin edit: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task compile`.
 - Build the current debug APK: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task build`
 - The expected artifact is `app\build\outputs\apk\debug\app-debug.apk`.
-- Compile the production-like app and the Macrobenchmark test APK: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task macrobenchmark-build`.
-- During Macrobenchmark test development, use the faster Kotlin-only gate first: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task macrobenchmark-compile`.
 - Treat a non-zero script exit code as a failed build. Report the Gradle task and the first actionable error; do not install an APK from a failed or stale build.
 
 ## Verification
@@ -28,8 +26,7 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 - Build and install the debug APK while preserving package data: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task install -Serial <serial> -AllowDeviceMutation`.
 - Launch and wait for the main activity: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task launch -Serial <serial>`.
 - Run the full instrumented suite on the selected device only: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task connected-test -Serial <serial> -AllowDeviceMutation`.
-- Run Macrobenchmark only after explicit device-mutation authorization: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task macrobenchmark -Serial <serial> -AllowDeviceMutation`. It installs the benchmark app/test APK and requires the selected physical device to be the only ready ADB device.
-- `-AllowDeviceMutation` is an explicit acknowledgement that install/test commands modify the selected device. Never use it without user authorization.
+- `-AllowDeviceMutation` acknowledges device writes. Never use it without user authorization.
 
 ## Performance reproduction
 
@@ -38,7 +35,7 @@ Use the repository wrapper and `scripts/android.ps1` for Android work. Run comma
 - Restore any temporary device settings before handoff, including all three animation scales.
 - Run the CalendarScreen month-swipe regression gate with an installed app whose onboarding is already complete: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\measure-calendar-swipe.ps1 -Serial <serial> -Count 10 -Direction Left -DurationMs 300`. The gate validates the header after every swipe, not merely the net final month.
 - `Left` advances to the next month and `Right` goes to the previous month. The script launches the existing activity, but never installs an APK, clears app data, or changes animation scales; it shares `scripts/lib/android-device.ps1` with `android.ps1` and rejects `emulator-*` and other QEMU devices.
-- The gate exits `0` on pass and `1` on fail. It writes only parsed JSON to the system temp directory by default; an explicit `-OutputPath` must point outside the source tree. The ADB gate does not measure visual frame timing; `:benchmark:connectedBenchmarkAndroidTest` uses `FrameTimingMetric` on the physical device for that signal.
+- The gate exits `0` on pass and `1` on fail. It writes only parsed JSON to the system temp directory by default; an explicit `-OutputPath` must point outside the source tree. The ADB gate does not measure visual frame timing.
 
 ## Guardrails
 

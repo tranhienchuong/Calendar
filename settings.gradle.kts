@@ -31,4 +31,3 @@ plugins {
 
 rootProject.name = "Lịch Vạn Niên"
 include(":app")
-include(":benchmark")

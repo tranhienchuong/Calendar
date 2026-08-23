@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('compile', 'build', 'unit-test', 'test-class', 'lint', 'verify', 'device-check', 'install', 'launch', 'connected-test', 'gfxinfo', 'macrobenchmark-compile', 'macrobenchmark-build', 'macrobenchmark')]
+    [ValidateSet('compile', 'build', 'unit-test', 'test-class', 'lint', 'verify', 'device-check', 'install', 'launch', 'connected-test', 'gfxinfo')]
     [string]$Task,
 
     [string]$Serial,
@@ -125,18 +125,5 @@ switch ($Task) {
         $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
         $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
         Invoke-Checked -FilePath $adb -Arguments @('-s', $targetSerial, 'shell', 'dumpsys', 'gfxinfo', $packageName)
-    }
-    'macrobenchmark-build' {
-        Invoke-Gradle -Arguments @(':app:assembleBenchmark', ':benchmark:assembleBenchmark')
-    }
-    'macrobenchmark-compile' {
-        Invoke-Gradle -Arguments @(':benchmark:compileBenchmarkKotlin')
-    }
-    'macrobenchmark' {
-        Require-DeviceMutationApproval
-        $adb = Get-AndroidAdbPath -ProjectRoot $projectRoot
-        $targetSerial = (Get-AuthorizedPhysicalAndroidDevice -AdbPath $adb -Serial $Serial).Serial
-        Assert-OnlySelectedAndroidDeviceConnected -AdbPath $adb -Serial $targetSerial
-        Invoke-Gradle -Arguments @(':benchmark:connectedBenchmarkAndroidTest')
     }
 }
