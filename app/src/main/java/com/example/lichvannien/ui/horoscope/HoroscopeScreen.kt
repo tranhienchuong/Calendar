@@ -1,8 +1,5 @@
 package com.example.lichvannien.ui.horoscope
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,8 +11,8 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +36,22 @@ fun HoroscopeScreen(
     val errorState by viewModel.error.collectAsStateWithLifecycle()
 
     val pullToRefreshState = rememberPullToRefreshState()
+
+    val shimmerColor = if (isLoading) {
+        val transition = rememberInfiniteTransition(label = "shimmer")
+        val shimmerAlpha by transition.animateFloat(
+            initialValue = 0.15f,
+            targetValue = 0.45f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(900, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "alpha"
+        )
+        MaterialTheme.colorScheme.onSurface.copy(alpha = shimmerAlpha)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
 
     PullToRefreshBox(
         isRefreshing = isLoading,
@@ -124,7 +137,7 @@ fun HoroscopeScreen(
             if (isLoading) {
                 // Skeleton Shimmer Loading
                 items(4, key = { "shimmer_$it" }) {
-                    ShimmerCardItem()
+                    ShimmerCardItem(shimmerColor = shimmerColor)
                 }
             } else if (error != null) {
                 // Lỗi tải dữ liệu
@@ -151,68 +164,39 @@ fun HoroscopeScreen(
             } else if (horoscope != null) {
                 // Thẻ Tổng quan
                 item(key = "overview_card") {
-                    HoroscopeCardWrapper(index = 0, horoscopeKey = horoscope.description) {
-                        HoroscopeDetailCard(
-                            title = stringResource(R.string.card_overview),
-                            content = horoscope.description,
-                            primaryColor = true
-                        )
-                    }
+                    HoroscopeDetailCard(
+                        title = stringResource(R.string.card_overview),
+                        content = horoscope.description,
+                        primaryColor = true
+                    )
                 }
 
                 // Các Thẻ Chỉ số Cát Hung
                 item(key = "compatibility_mood_card") {
-                    HoroscopeCardWrapper(index = 1, horoscopeKey = horoscope.description) {
-                        CardRow(
-                            title1 = stringResource(R.string.card_compatibility),
-                            content1 = horoscope.compatibility,
-                            title2 = stringResource(R.string.card_mood),
-                            content2 = horoscope.mood
-                        )
-                    }
+                    CardRow(
+                        title1 = stringResource(R.string.card_compatibility),
+                        content1 = horoscope.compatibility,
+                        title2 = stringResource(R.string.card_mood),
+                        content2 = horoscope.mood
+                    )
                 }
 
                 item(key = "color_lucky_number_card") {
-                    HoroscopeCardWrapper(index = 2, horoscopeKey = horoscope.description) {
-                        CardRow(
-                            title1 = stringResource(R.string.card_color),
-                            content1 = horoscope.color,
-                            title2 = stringResource(R.string.card_lucky_number),
-                            content2 = horoscope.luckyNumber
-                        )
-                    }
+                    CardRow(
+                        title1 = stringResource(R.string.card_color),
+                        content1 = horoscope.color,
+                        title2 = stringResource(R.string.card_lucky_number),
+                        content2 = horoscope.luckyNumber
+                    )
                 }
 
                 item(key = "lucky_time_card") {
-                    HoroscopeCardWrapper(index = 3, horoscopeKey = horoscope.description) {
-                        HoroscopeDetailCard(
-                            title = stringResource(R.string.card_lucky_time),
-                            content = horoscope.luckyTime
-                        )
-                    }
+                    HoroscopeDetailCard(
+                        title = stringResource(R.string.card_lucky_time),
+                        content = horoscope.luckyTime
+                    )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun HoroscopeCardWrapper(
-    index: Int,
-    horoscopeKey: String,
-    content: @Composable () -> Unit
-) {
-    key(horoscopeKey) {
-        var visible by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) {
-            visible = true
-        }
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn(animationSpec = tween(500, delayMillis = index * 100)) +
-                    slideInVertically(animationSpec = tween(500, delayMillis = index * 100)) { it / 4 }
-        ) {
-            content()
         }
     }
 }
@@ -304,7 +288,10 @@ fun CardRow(
 }
 
 @Composable
-fun ShimmerCardItem(modifier: Modifier = Modifier) {
+fun ShimmerCardItem(
+    shimmerColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp)
@@ -317,29 +304,16 @@ fun ShimmerCardItem(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth(0.3f)
                     .height(16.dp)
-                    .shimmerEffect()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerColor)
             )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
-                    .shimmerEffect()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerColor)
             )
         }
     }
-}
-
-// Fade effect shimmer helper conforming to standard M3 theme
-fun Modifier.shimmerEffect(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-    this.background(MaterialTheme.colorScheme.onSurface.copy(alpha = alpha))
 }
