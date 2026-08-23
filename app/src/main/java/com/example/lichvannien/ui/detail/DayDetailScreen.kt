@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -63,37 +64,30 @@ fun DayDetailScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                // Content with Fade-In Animation when loaded
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + slideInVertically { it / 2 },
-                    modifier = Modifier.fillMaxSize()
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Card 1: Thông tin ngày
-                        item(key = "info_card") {
-                            InfoCard(detail = detail)
-                        }
+                    // Card 1: Thông tin ngày
+                    item(key = "info_card") {
+                        InfoCard(detail = detail)
+                    }
 
-                        // Card 2: Ngày tốt / xấu
-                        item(key = "auspicious_card") {
-                            AuspiciousCard(detail = detail)
-                        }
+                    // Card 2: Ngày tốt / xấu
+                    item(key = "auspicious_card") {
+                        AuspiciousCard(detail = detail)
+                    }
 
-                        // Card 3: Giờ hoàng đạo
-                        item(key = "hours_card") {
-                            HoursCard(detail = detail)
-                        }
+                    // Card 3: Giờ hoàng đạo
+                    item(key = "hours_card") {
+                        HoursCard(detail = detail)
+                    }
 
-                        // Card 4: Sự kiện trong ngày
-                        item(key = "events_card") {
-                            EventsCard(detail = detail)
-                        }
+                    // Card 4: Sự kiện trong ngày
+                    item(key = "events_card") {
+                        EventsCard(detail = detail)
                     }
                 }
             }
@@ -104,15 +98,17 @@ fun DayDetailScreen(
 @Composable
 fun InfoCard(detail: DayDetail, modifier: Modifier = Modifier) {
     // Tính toán thứ bằng tiếng Việt
-    val localDate = LocalDate.of(detail.solarDate.year, detail.solarDate.month, detail.solarDate.day)
-    val dayOfWeekRes = when (localDate.dayOfWeek.value) {
-        1 -> R.string.day_monday
-        2 -> R.string.day_tuesday
-        3 -> R.string.day_wednesday
-        4 -> R.string.day_thursday
-        5 -> R.string.day_friday
-        6 -> R.string.day_saturday
-        else -> R.string.day_sunday
+    val dayOfWeekRes = remember(detail.solarDate.year, detail.solarDate.month, detail.solarDate.day) {
+        val localDate = LocalDate.of(detail.solarDate.year, detail.solarDate.month, detail.solarDate.day)
+        when (localDate.dayOfWeek.value) {
+            1 -> R.string.day_monday
+            2 -> R.string.day_tuesday
+            3 -> R.string.day_wednesday
+            4 -> R.string.day_thursday
+            5 -> R.string.day_friday
+            6 -> R.string.day_saturday
+            else -> R.string.day_sunday
+        }
     }
 
     val solarDateStr = "${stringResource(dayOfWeekRes)}, ${detail.solarDate.day}/${detail.solarDate.month}/${detail.solarDate.year}"
@@ -279,10 +275,17 @@ fun HoursCard(detail: DayDetail, modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 detail.auspicious.gioHoangDao.forEach { hour ->
-                    SuggestionChip(
-                        onClick = { },
-                        label = { Text(text = hour, fontSize = 12.sp) }
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                    ) {
+                        Text(
+                            text = hour,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
                 }
             }
         }

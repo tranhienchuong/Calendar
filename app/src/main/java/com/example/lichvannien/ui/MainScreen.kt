@@ -47,18 +47,16 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Crossfade(targetState = currentTab, label = "tab_transition") { tab ->
-                when (tab) {
-                    Screen.Calendar.route -> {
-                        CalendarScreen(
-                            onDayClick = { year, month, day ->
-                                navController.navigate(Screen.DayDetail.createRoute(year, month, day))
-                            }
-                        )
-                    }
-                    Screen.Horoscope.route -> {
-                        HoroscopeScreen()
-                    }
+            when (currentTab) {
+                Screen.Calendar.route -> {
+                    CalendarScreen(
+                        onDayClick = { year, month, day ->
+                            navController.navigate(Screen.DayDetail.createRoute(year, month, day))
+                        }
+                    )
+                }
+                Screen.Horoscope.route -> {
+                    HoroscopeScreen()
                 }
             }
         }
