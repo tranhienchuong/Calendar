@@ -8,8 +8,12 @@ HSPLcom/example/lichvannien/LichVanNienApp;->onCreate()V
 
 # Calendar UI & ViewModel
 HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->CalendarScreen(Lkotlin/jvm/functions/Function3;Landroidx/compose/ui/Modifier;Lcom/example/lichvannien/ui/calendar/CalendarViewModel;Landroidx/compose/runtime/Composer;II)V
-HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->CalendarGrid(Lkotlinx/collections/immutable/ImmutableList;Lkotlin/jvm/functions/Function3;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
-HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->DayCell(Lcom/example/lichvannien/ui/calendar/CalendarDayUiModel;Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->CalendarHeader(Ljava/time/YearMonth;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->WeekdaysHeader(Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->MonthPage(Ljava/time/YearMonth;Lkotlinx/collections/immutable/ImmutableList;Lcom/example/lichvannien/ui/calendar/DayCellThemePalette;Lkotlin/jvm/functions/Function3;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->CalendarGrid(Lkotlinx/collections/immutable/ImmutableList;Lcom/example/lichvannien/ui/calendar/DayCellThemePalette;Lkotlin/jvm/functions/Function3;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/CalendarScreenKt;->DayCell(Lcom/example/lichvannien/ui/calendar/CalendarDayUiModel;Lcom/example/lichvannien/ui/calendar/DayCellThemePalette;Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+HSPLcom/example/lichvannien/ui/calendar/DayCellThemePalette;-><init>(JJJJJJJJ)V
 HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;-><init>(Lcom/example/lichvannien/domain/util/LunarConverter;Lcom/example/lichvannien/domain/util/AuspiciousCalculator;Lcom/example/lichvannien/domain/repository/SpecialDayRepository;Lkotlinx/coroutines/CoroutineDispatcher;)V
 HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->loadMonth(II)V
 HSPLcom/example/lichvannien/ui/calendar/CalendarViewModel;->getMonthDays(Ljava/time/YearMonth;)Lkotlinx/collections/immutable/ImmutableList;
