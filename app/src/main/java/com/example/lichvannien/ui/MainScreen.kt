@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +55,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     userPreferences: UserPreferences? = null
 ) {
-    var currentTab by remember { mutableStateOf(Screen.Today.route) }
+    var currentTab by rememberSaveable { mutableStateOf(Screen.Today.route) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
@@ -380,6 +381,7 @@ fun MainScreen(
                         Screen.CalendarMonth.route, Screen.Calendar.route -> {
                             CalendarScreen(
                                 onDayClick = { year, month, day ->
+                                    currentTab = Screen.CalendarMonth.route
                                     navController.navigate(Screen.DayDetail.createRoute(year, month, day))
                                 }
                             )
@@ -401,6 +403,7 @@ fun MainScreen(
         SearchDialog(
             onDismiss = { showSearchDialog = false },
             onNavigateToDay = { year, month, day ->
+                currentTab = Screen.CalendarMonth.route
                 navController.navigate(Screen.DayDetail.createRoute(year, month, day))
             }
         )

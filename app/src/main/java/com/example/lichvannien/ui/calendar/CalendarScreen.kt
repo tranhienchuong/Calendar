@@ -364,8 +364,8 @@ fun DayCell(
         return
     }
 
+    val isDark = isSystemInDarkTheme()
     val solarDayColor = when {
-        isSelected -> Color.White
         day.isSunday -> Color(0xFFC62828)
         day.isSaturday -> Color(0xFF8B0000)
         else -> MaterialTheme.colorScheme.onSurface
@@ -376,13 +376,17 @@ fun DayCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (isSelected) {
-            // Selected circle badge màu Vàng Cam Minimalist
+        if (day.isToday) {
+            // Ngày Hôm Nay: LUÔN LUÔN hiển thị hình tròn màu vàng cam đặc trưng
             Box(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF59E0B)),
+                    .background(Color(0xFFF59E0B))
+                    .then(
+                        if (isSelected) Modifier.border(1.5.dp, if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E), CircleShape)
+                        else Modifier
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -404,23 +408,42 @@ fun DayCell(
                     textAlign = TextAlign.Center
                 )
             }
-
-            if (day.isToday) {
+        } else if (isSelected) {
+            // Ngày được chọn khác (không phải hôm nay): Viền tròn màu vàng cam + nền pastel nhẹ
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color(0xFF2C2417) else Color(0xFFFEF3C7))
+                    .border(1.5.dp, Color(0xFFF59E0B), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = "Hôm nay",
+                    text = day.solarDayText,
+                    color = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            if (day.lunarDayText != null) {
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = day.lunarDayText,
                     color = Color(0xFFD97706),
-                    fontSize = 8.sp,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
             }
         } else {
-            // Normal Day Cell
+            // Ngày bình thường
             Text(
                 text = day.solarDayText,
-                color = if (day.isToday) Color(0xFFD97706) else solarDayColor,
+                color = solarDayColor,
                 fontSize = 15.sp,
-                fontWeight = if (day.isToday) FontWeight.Black else FontWeight.Bold,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
