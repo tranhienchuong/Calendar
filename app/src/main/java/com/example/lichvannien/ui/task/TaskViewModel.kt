@@ -2,7 +2,7 @@ package com.example.lichvannien.ui.task
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.domain.repository.TaskRepository
 import com.example.lichvannien.ui.task.model.TaskPastelColor
 import com.example.lichvannien.ui.task.reminder.TaskReminderScheduler
@@ -37,8 +37,8 @@ enum class TaskSort(val label: String) {
 }
 
 data class TaskUiState(
-    val allTasks: List<TaskEntity> = emptyList(),
-    val displayedTasks: List<TaskEntity> = emptyList(),
+    val allTasks: List<Task> = emptyList(),
+    val displayedTasks: List<Task> = emptyList(),
     val totalCount: Int = 0,
     val pendingCount: Int = 0,
     val completedCount: Int = 0,
@@ -49,7 +49,7 @@ data class TaskUiState(
     val isLoading: Boolean = false
 ) {
     // Tương thích ngược với các màn hình hoặc test cũ
-    val tasks: List<TaskEntity> get() = displayedTasks
+    val tasks: List<Task> get() = displayedTasks
 }
 
 @HiltViewModel
@@ -97,21 +97,21 @@ class TaskViewModel @Inject constructor(
         // 3. Sắp xếp theo Sort
         list = when (sort) {
             TaskSort.TIME_ASC -> list.sortedWith(
-                compareBy<TaskEntity> { it.isCompleted }
+                compareBy<Task> { it.isCompleted }
                     .thenBy { it.date }
                     .thenBy { it.dueTime ?: it.startTime ?: "99:99" }
             )
             TaskSort.TIME_DESC -> list.sortedWith(
-                compareBy<TaskEntity> { it.isCompleted }
+                compareBy<Task> { it.isCompleted }
                     .thenByDescending { it.date }
                     .thenByDescending { it.dueTime ?: it.startTime ?: "00:00" }
             )
             TaskSort.TITLE -> list.sortedWith(
-                compareBy<TaskEntity> { it.isCompleted }
+                compareBy<Task> { it.isCompleted }
                     .thenBy { it.title.lowercase() }
             )
             TaskSort.COLOR -> list.sortedWith(
-                compareBy<TaskEntity> { it.isCompleted }
+                compareBy<Task> { it.isCompleted }
                     .thenBy { it.colorTag }
             )
         }
@@ -141,7 +141,7 @@ class TaskViewModel @Inject constructor(
     fun refreshRecurringTasks(today: LocalDate = LocalDate.now()) {
         viewModelScope.launch {
             val recurringTasks = taskRepository.getRecurringTasks()
-            val tasksToUpdate = mutableListOf<TaskEntity>()
+            val tasksToUpdate = mutableListOf<Task>()
             for (task in recurringTasks) {
                 val taskDate = TaskDateTimeHelper.parseDate(task.date)
                 if (taskDate != null && taskDate.isBefore(today)) {
@@ -202,7 +202,7 @@ class TaskViewModel @Inject constructor(
         val finalDueTime = dueTime ?: startTime
 
         viewModelScope.launch {
-            val task = TaskEntity(
+            val task = Task(
                 title = title.trim(),
                 date = date,
                 startTime = finalDueTime?.ifBlank { null },
@@ -224,7 +224,7 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    fun updateTask(task: TaskEntity) {
+    fun updateTask(task: Task) {
         viewModelScope.launch {
             taskRepository.updateTask(task)
             if (task.isCompleted) {

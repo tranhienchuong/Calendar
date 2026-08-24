@@ -39,8 +39,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
-import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.domain.model.SpecialDay
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.theme.AppHeaderBlue
 import java.time.LocalDate
 

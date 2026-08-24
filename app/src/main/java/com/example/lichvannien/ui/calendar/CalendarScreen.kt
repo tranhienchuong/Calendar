@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.theme.*
 import com.example.lichvannien.ui.today.AddTodayTaskDialog
 import kotlinx.collections.immutable.ImmutableList
@@ -475,7 +475,7 @@ fun DayCell(
 @Composable
 fun SelectedDateScheduleCard(
     selectedDate: LocalDate,
-    tasks: List<TaskEntity>,
+    tasks: List<Task>,
     modifier: Modifier = Modifier
 ) {
     val isToday = selectedDate == LocalDate.now()

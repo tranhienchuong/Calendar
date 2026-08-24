@@ -1,19 +1,19 @@
 package com.example.lichvannien.domain.repository
 
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import kotlinx.coroutines.flow.Flow
 
 interface TaskRepository {
-    fun getAllTasks(): Flow<List<TaskEntity>>
-    fun getTasksForDate(date: String): Flow<List<TaskEntity>>
-    suspend fun getTasksForDateSync(date: String): List<TaskEntity>
-    fun searchTasks(query: String): Flow<List<TaskEntity>>
-    suspend fun searchTasksSync(query: String): List<TaskEntity>
-    suspend fun getTaskById(id: Long): TaskEntity?
-    suspend fun getRecurringTasks(): List<TaskEntity>
-    suspend fun addTask(task: TaskEntity): Long
-    suspend fun updateTask(task: TaskEntity)
-    suspend fun updateTasks(tasks: List<TaskEntity>)
+    fun getAllTasks(): Flow<List<Task>>
+    fun getTasksForDate(date: String): Flow<List<Task>>
+    suspend fun getTasksForDateSync(date: String): List<Task>
+    fun searchTasks(query: String): Flow<List<Task>>
+    suspend fun searchTasksSync(query: String): List<Task>
+    suspend fun getTaskById(id: Long): Task?
+    suspend fun getRecurringTasks(): List<Task>
+    suspend fun addTask(task: Task): Long
+    suspend fun updateTask(task: Task)
+    suspend fun updateTasks(tasks: List<Task>)
     suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean)
     suspend fun deleteTask(id: Long)
 }

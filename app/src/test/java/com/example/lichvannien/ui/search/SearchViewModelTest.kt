@@ -1,7 +1,7 @@
 package com.example.lichvannien.ui.search
 
-import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.domain.model.SpecialDay
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.domain.repository.SpecialDayRepository
 import com.example.lichvannien.domain.repository.TaskRepository
 import com.example.lichvannien.domain.util.AuspiciousCalculator
@@ -73,7 +73,7 @@ class SearchViewModelTest {
             SpecialDay(name = "Giỗ Tổ Hùng Vương", icon = "🏛️", lunarMonth = 3, lunarDay = 10, isLunar = true)
         )
         fakeTaskRepo.taskList = listOf(
-            TaskEntity(id = 1, title = "Mua quà Tết", date = "2026-02-15", isCompleted = false)
+            Task(id = 1, title = "Mua quà Tết", date = "2026-02-15", isCompleted = false)
         )
 
         val viewModel = createViewModel()
@@ -124,18 +124,18 @@ private class FakeSpecialDayRepository : SpecialDayRepository {
 }
 
 private class FakeTaskRepository : TaskRepository {
-    var taskList = listOf<TaskEntity>()
+    var taskList = listOf<Task>()
 
-    override fun getAllTasks(): Flow<List<TaskEntity>> = flowOf(taskList)
-    override fun getTasksForDate(date: String): Flow<List<TaskEntity>> = flowOf(taskList.filter { it.date == date })
-    override suspend fun getTasksForDateSync(date: String): List<TaskEntity> = taskList.filter { it.date == date }
-    override fun searchTasks(query: String): Flow<List<TaskEntity>> = flowOf(taskList.filter { it.title.contains(query, ignoreCase = true) })
-    override suspend fun searchTasksSync(query: String): List<TaskEntity> = taskList.filter { it.title.contains(query, ignoreCase = true) }
-    override suspend fun getTaskById(id: Long): TaskEntity? = taskList.find { it.id == id }
-    override suspend fun getRecurringTasks(): List<TaskEntity> = taskList.filter { it.repeatType != "ONCE" }
-    override suspend fun addTask(task: TaskEntity): Long = 1L
-    override suspend fun updateTask(task: TaskEntity) {}
-    override suspend fun updateTasks(tasks: List<TaskEntity>) {}
+    override fun getAllTasks(): Flow<List<Task>> = flowOf(taskList)
+    override fun getTasksForDate(date: String): Flow<List<Task>> = flowOf(taskList.filter { it.date == date })
+    override suspend fun getTasksForDateSync(date: String): List<Task> = taskList.filter { it.date == date }
+    override fun searchTasks(query: String): Flow<List<Task>> = flowOf(taskList.filter { it.title.contains(query, ignoreCase = true) })
+    override suspend fun searchTasksSync(query: String): List<Task> = taskList.filter { it.title.contains(query, ignoreCase = true) }
+    override suspend fun getTaskById(id: Long): Task? = taskList.find { it.id == id }
+    override suspend fun getRecurringTasks(): List<Task> = taskList.filter { it.repeatType != "ONCE" }
+    override suspend fun addTask(task: Task): Long = 1L
+    override suspend fun updateTask(task: Task) {}
+    override suspend fun updateTasks(tasks: List<Task>) {}
     override suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean) {}
     override suspend fun deleteTask(id: Long) {}
 }

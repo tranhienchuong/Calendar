@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.theme.AppHeaderBlue
 import com.example.lichvannien.ui.task.components.EditTaskSheet
 import com.example.lichvannien.ui.task.components.QuickAddTaskSheet
@@ -46,7 +46,7 @@ fun TaskScreen(
     val isDark = isSystemInDarkTheme()
 
     var showQuickAddSheet by remember { mutableStateOf(false) }
-    var taskToEdit by remember { mutableStateOf<TaskEntity?>(null) }
+    var taskToEdit by remember { mutableStateOf<Task?>(null) }
     var isSearchActive by remember { mutableStateOf(false) }
     var showFilterSortMenu by remember { mutableStateOf(false) }
 

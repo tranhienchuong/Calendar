@@ -1,6 +1,6 @@
 package com.example.lichvannien.ui.task.util
 
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -65,7 +65,7 @@ object TaskDateTimeHelper {
         }
     }
 
-    fun isOverdue(task: TaskEntity, now: LocalDateTime = LocalDateTime.now()): Boolean {
+    fun isOverdue(task: Task, now: LocalDateTime = LocalDateTime.now()): Boolean {
         if (task.isCompleted) return false
         val taskDate = parseDate(task.date) ?: return false
         val taskTime = parseTime(task.dueTime ?: task.startTime)
@@ -78,7 +78,7 @@ object TaskDateTimeHelper {
         }
     }
 
-    fun formatTaskSubtitle(task: TaskEntity, now: LocalDateTime = LocalDateTime.now()): String {
+    fun formatTaskSubtitle(task: Task, now: LocalDateTime = LocalDateTime.now()): String {
         val taskDate = parseDate(task.date)
         val taskTime = parseTime(task.dueTime ?: task.startTime)
         val repeatRule = TaskRepeatRule.fromCode(task.repeatType)

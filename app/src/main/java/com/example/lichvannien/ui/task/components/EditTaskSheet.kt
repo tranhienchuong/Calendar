@@ -22,7 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.theme.AppHeaderBlue
 import com.example.lichvannien.ui.task.model.TaskPastelColor
 import com.example.lichvannien.ui.task.util.TaskDateTimeHelper
@@ -30,9 +30,9 @@ import com.example.lichvannien.ui.task.util.TaskDateTimeHelper
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskSheet(
-    task: TaskEntity,
+    task: Task,
     onDismiss: () -> Unit,
-    onSaveTask: (TaskEntity) -> Unit
+    onSaveTask: (Task) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isDark = isSystemInDarkTheme()

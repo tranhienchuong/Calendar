@@ -1,6 +1,6 @@
 package com.example.lichvannien.ui.task
 
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.domain.repository.TaskRepository
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
@@ -46,9 +46,9 @@ class TaskViewModelTest {
     fun initialState_loadsTasksAndCalculatesCounters() = testScope.runTest {
         val todayStr = LocalDate.now().toString()
         fakeRepo.tasksFlow.value = listOf(
-            TaskEntity(id = 1, title = "Cắm cơm", date = todayStr, dueTime = "10:30", isCompleted = false),
-            TaskEntity(id = 2, title = "Học Trade", date = todayStr, dueTime = "13:00", isCompleted = false),
-            TaskEntity(id = 3, title = "Thể dục", date = todayStr, dueTime = "16:30", isCompleted = true)
+            Task(id = 1, title = "Cắm cơm", date = todayStr, dueTime = "10:30", isCompleted = false),
+            Task(id = 2, title = "Học Trade", date = todayStr, dueTime = "13:00", isCompleted = false),
+            Task(id = 3, title = "Thể dục", date = todayStr, dueTime = "16:30", isCompleted = true)
         )
 
         val viewModel = createViewModel()
@@ -70,8 +70,8 @@ class TaskViewModelTest {
     fun filter_pending_showsOnlyUncompletedTasks() = testScope.runTest {
         val todayStr = LocalDate.now().toString()
         fakeRepo.tasksFlow.value = listOf(
-            TaskEntity(id = 1, title = "Task 1", date = todayStr, isCompleted = false),
-            TaskEntity(id = 2, title = "Task 2", date = todayStr, isCompleted = true)
+            Task(id = 1, title = "Task 1", date = todayStr, isCompleted = false),
+            Task(id = 2, title = "Task 2", date = todayStr, isCompleted = true)
         )
 
         val viewModel = createViewModel()
@@ -93,8 +93,8 @@ class TaskViewModelTest {
     @Test
     fun searchQuery_filtersByTitle() = testScope.runTest {
         fakeRepo.tasksFlow.value = listOf(
-            TaskEntity(id = 1, title = "Học lập trình Kotlin", date = "2026-08-24", isCompleted = false),
-            TaskEntity(id = 2, title = "Đi siêu thị mua hoa quả", date = "2026-08-24", isCompleted = false)
+            Task(id = 1, title = "Học lập trình Kotlin", date = "2026-08-24", isCompleted = false),
+            Task(id = 2, title = "Đi siêu thị mua hoa quả", date = "2026-08-24", isCompleted = false)
         )
 
         val viewModel = createViewModel()
@@ -133,7 +133,7 @@ class TaskViewModelTest {
     @Test
     fun toggleTask_keepsTaskCompletedToday() = testScope.runTest {
         val todayStr = LocalDate.now().toString()
-        val dailyTask = TaskEntity(
+        val dailyTask = Task(
             id = 10L,
             title = "Uống nước",
             date = todayStr,
@@ -161,7 +161,7 @@ class TaskViewModelTest {
     fun refreshRecurringTasks_pastCompletedDailyTask_refreshesToTodayUncompleted() = testScope.runTest {
         val yesterdayStr = "2026-08-23"
         val today = LocalDate.of(2026, 8, 24)
-        val dailyTask = TaskEntity(
+        val dailyTask = Task(
             id = 10L,
             title = "Uống nước",
             date = yesterdayStr,
@@ -182,24 +182,24 @@ class TaskViewModelTest {
 }
 
 private class FakeTaskRepository : TaskRepository {
-    val tasksFlow = MutableStateFlow<List<TaskEntity>>(emptyList())
+    val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
     var lastToggledId: Long? = null
     var lastToggledCompleted: Boolean? = null
-    var lastUpdatedTask: TaskEntity? = null
+    var lastUpdatedTask: Task? = null
     var lastDeletedId: Long? = null
 
-    override fun getAllTasks(): Flow<List<TaskEntity>> = tasksFlow
-    override fun getTasksForDate(date: String): Flow<List<TaskEntity>> = tasksFlow
-    override suspend fun getTasksForDateSync(date: String): List<TaskEntity> = tasksFlow.value
-    override fun searchTasks(query: String): Flow<List<TaskEntity>> = tasksFlow
-    override suspend fun searchTasksSync(query: String): List<TaskEntity> = tasksFlow.value
-    override suspend fun getTaskById(id: Long): TaskEntity? = tasksFlow.value.find { it.id == id }
-    override suspend fun getRecurringTasks(): List<TaskEntity> = tasksFlow.value.filter { it.repeatType != "ONCE" }
-    override suspend fun addTask(task: TaskEntity): Long = 1L
-    override suspend fun updateTask(task: TaskEntity) {
+    override fun getAllTasks(): Flow<List<Task>> = tasksFlow
+    override fun getTasksForDate(date: String): Flow<List<Task>> = tasksFlow
+    override suspend fun getTasksForDateSync(date: String): List<Task> = tasksFlow.value
+    override fun searchTasks(query: String): Flow<List<Task>> = tasksFlow
+    override suspend fun searchTasksSync(query: String): List<Task> = tasksFlow.value
+    override suspend fun getTaskById(id: Long): Task? = tasksFlow.value.find { it.id == id }
+    override suspend fun getRecurringTasks(): List<Task> = tasksFlow.value.filter { it.repeatType != "ONCE" }
+    override suspend fun addTask(task: Task): Long = 1L
+    override suspend fun updateTask(task: Task) {
         lastUpdatedTask = task
     }
-    override suspend fun updateTasks(tasks: List<TaskEntity>) {
+    override suspend fun updateTasks(tasks: List<Task>) {
         if (tasks.isNotEmpty()) {
             lastUpdatedTask = tasks.last()
         }

@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.ui.task.util.TaskDateTimeHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
@@ -65,7 +65,7 @@ class TaskReminderScheduler @Inject constructor(
         }
     }
 
-    fun scheduleTaskReminder(task: TaskEntity) {
+    fun scheduleTaskReminder(task: Task) {
         if (task.isCompleted) {
             cancelTaskReminder(task.id)
             return

@@ -3,9 +3,9 @@ package com.example.lichvannien.ui.calendar
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.domain.repository.SpecialDayRepository
 import com.example.lichvannien.domain.repository.TaskRepository
-import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.domain.util.AuspiciousCalculator
 import com.example.lichvannien.domain.util.LunarConverter
 import com.example.lichvannien.di.DefaultDispatcher
@@ -53,7 +53,7 @@ data class CalendarUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val daysList: ImmutableList<CalendarDayUiModel> = persistentListOf(),
     val monthDataMap: Map<YearMonth, ImmutableList<CalendarDayUiModel>> = emptyMap(),
-    val selectedDateTasks: List<TaskEntity> = emptyList(),
+    val selectedDateTasks: List<Task> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -168,7 +168,7 @@ class CalendarViewModel @Inject constructor(
         val date = _uiState.value.selectedDate
         val dateStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
         viewModelScope.launch {
-            val task = TaskEntity(
+            val task = Task(
                 title = title,
                 date = dateStr,
                 startTime = startTime?.ifBlank { null },

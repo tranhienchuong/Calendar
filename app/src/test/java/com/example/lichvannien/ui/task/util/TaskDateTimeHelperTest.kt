@@ -1,6 +1,6 @@
 package com.example.lichvannien.ui.task.util
 
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import java.time.LocalDate
@@ -12,7 +12,7 @@ class TaskDateTimeHelperTest {
 
     @Test
     fun isOverdue_taskCompleted_returnsFalse() {
-        val task = TaskEntity(
+        val task = Task(
             title = "Đi chợ",
             date = "2026-08-23",
             dueTime = "08:00",
@@ -24,7 +24,7 @@ class TaskDateTimeHelperTest {
 
     @Test
     fun isOverdue_pastDate_returnsTrue() {
-        val task = TaskEntity(
+        val task = Task(
             title = "Nộp báo cáo",
             date = "2026-08-23",
             dueTime = "14:00",
@@ -36,7 +36,7 @@ class TaskDateTimeHelperTest {
 
     @Test
     fun isOverdue_sameDateEarlierTime_returnsTrue() {
-        val task = TaskEntity(
+        val task = Task(
             title = "Họp sáng",
             date = "2026-08-24",
             dueTime = "08:30",
@@ -48,7 +48,7 @@ class TaskDateTimeHelperTest {
 
     @Test
     fun isOverdue_sameDateLaterTime_returnsFalse() {
-        val task = TaskEntity(
+        val task = Task(
             title = "Học Trade",
             date = "2026-08-24",
             dueTime = "13:00",
@@ -60,7 +60,7 @@ class TaskDateTimeHelperTest {
 
     @Test
     fun formatTaskSubtitle_todayWithTimeAndDailyRepeat() {
-        val task = TaskEntity(
+        val task = Task(
             title = "Cắm cơm",
             date = "2026-08-24",
             dueTime = "10:30",
@@ -73,7 +73,7 @@ class TaskDateTimeHelperTest {
 
     @Test
     fun formatTaskSubtitle_tomorrowWithTimeAndDailyRepeat() {
-        val task = TaskEntity(
+        val task = Task(
             title = "Dậy",
             date = "2026-08-25",
             dueTime = "06:30",

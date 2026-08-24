@@ -2,10 +2,10 @@ package com.example.lichvannien.ui.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.domain.model.AuspiciousResult
 import com.example.lichvannien.domain.model.LunarDate
 import com.example.lichvannien.domain.model.SpecialDay
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.domain.repository.SpecialDayRepository
 import com.example.lichvannien.domain.repository.TaskRepository
 import com.example.lichvannien.domain.util.AuspiciousCalculator
@@ -28,7 +28,7 @@ data class TodayUiState(
     val lunarDate: LunarDate = LunarConverter.solarToLunar(LocalDate.now().year, LocalDate.now().monthValue, LocalDate.now().dayOfMonth),
     val auspicious: AuspiciousResult = AuspiciousCalculator.calculate(LunarConverter.solarToLunar(LocalDate.now().year, LocalDate.now().monthValue, LocalDate.now().dayOfMonth)),
     val specialDays: List<SpecialDay> = emptyList(),
-    val todayTasks: List<TaskEntity> = emptyList(),
+    val todayTasks: List<Task> = emptyList(),
     val isScheduleExpanded: Boolean = true
 )
 
@@ -84,7 +84,7 @@ class TodayViewModel @Inject constructor(
     fun refreshRecurringTasks(today: LocalDate = LocalDate.now()) {
         viewModelScope.launch {
             val recurringTasks = taskRepository.getRecurringTasks()
-            val tasksToUpdate = mutableListOf<TaskEntity>()
+            val tasksToUpdate = mutableListOf<Task>()
             for (task in recurringTasks) {
                 val taskDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.parseDate(task.date)
                 if (taskDate != null && taskDate.isBefore(today)) {
@@ -123,7 +123,7 @@ class TodayViewModel @Inject constructor(
 
     fun addNewTask(title: String, startTime: String?, endTime: String?, location: String?) {
         viewModelScope.launch {
-            val task = TaskEntity(
+            val task = Task(
                 title = title,
                 date = todayStr,
                 startTime = startTime?.ifBlank { null },

@@ -2,11 +2,11 @@ package com.example.lichvannien.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.domain.model.AuspiciousResult
 import com.example.lichvannien.domain.model.LunarDate
 import com.example.lichvannien.domain.model.SolarDate
 import com.example.lichvannien.domain.model.SpecialDay
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.domain.repository.SpecialDayRepository
 import com.example.lichvannien.domain.repository.TaskRepository
 import com.example.lichvannien.domain.util.AuspiciousCalculator
@@ -24,7 +24,7 @@ import javax.inject.Inject
 data class SearchUiState(
     val query: String = "",
     val specialDays: List<SpecialDay> = emptyList(),
-    val tasks: List<TaskEntity> = emptyList(),
+    val tasks: List<Task> = emptyList(),
     val quickDateSolar: SolarDate? = null,
     val quickDateLunar: LunarDate? = null,
     val quickDateAuspicious: AuspiciousResult? = null,

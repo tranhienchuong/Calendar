@@ -158,7 +158,7 @@ fun QuickAddTaskSheet(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         val formattedSubtitle = remember(date, dueTime, repeatType) {
-                            val dummyTask = com.example.lichvannien.data.local.entity.TaskEntity(
+                            val dummyTask = com.example.lichvannien.domain.model.Task(
                                 title = "",
                                 date = date,
                                 dueTime = dueTime,

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
-import com.example.lichvannien.data.local.entity.TaskEntity
+import com.example.lichvannien.domain.model.Task
 import com.example.lichvannien.theme.*
 import com.example.lichvannien.ui.task.components.TaskItemCard
 import java.time.LocalDate
@@ -369,7 +369,7 @@ fun SpecialEventsTodayCard(
 
 @Composable
 fun TodayScheduleSection(
-    tasks: List<TaskEntity>,
+    tasks: List<Task>,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit,
     onTaskToggle: (Long, Boolean) -> Unit,
