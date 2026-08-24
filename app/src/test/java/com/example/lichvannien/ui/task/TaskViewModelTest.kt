@@ -131,7 +131,7 @@ class TaskViewModelTest {
     }
 
     @Test
-    fun toggleTask_recurringDaily_advancesDateToTomorrow() = testScope.runTest {
+    fun toggleTask_keepsTaskCompletedToday() = testScope.runTest {
         val todayStr = LocalDate.now().toString()
         val dailyTask = TaskEntity(
             id = 10L,
@@ -151,12 +151,33 @@ class TaskViewModelTest {
         viewModel.toggleTask(id = 10L, isCompleted = true)
         advanceUntilIdle()
 
+        assertThat(fakeRepo.lastToggledId).isEqualTo(10L)
+        assertThat(fakeRepo.lastToggledCompleted).isTrue()
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun refreshRecurringTasks_pastCompletedDailyTask_refreshesToTodayUncompleted() = testScope.runTest {
+        val yesterdayStr = "2026-08-23"
+        val today = LocalDate.of(2026, 8, 24)
+        val dailyTask = TaskEntity(
+            id = 10L,
+            title = "Uống nước",
+            date = yesterdayStr,
+            repeatType = "DAILY",
+            isCompleted = true
+        )
+        fakeRepo.tasksFlow.value = listOf(dailyTask)
+
+        val viewModel = createViewModel()
+        viewModel.refreshRecurringTasks(today)
+        advanceUntilIdle()
+
         assertThat(fakeRepo.lastUpdatedTask).isNotNull()
         assertThat(fakeRepo.lastUpdatedTask?.id).isEqualTo(10L)
         assertThat(fakeRepo.lastUpdatedTask?.isCompleted).isFalse()
-        assertThat(fakeRepo.lastUpdatedTask?.date).isEqualTo(LocalDate.now().plusDays(1).toString())
-
-        collectJob.cancel()
+        assertThat(fakeRepo.lastUpdatedTask?.date).isEqualTo("2026-08-24")
     }
 }
 
@@ -173,6 +194,7 @@ private class FakeTaskRepository : TaskRepository {
     override fun searchTasks(query: String): Flow<List<TaskEntity>> = tasksFlow
     override suspend fun searchTasksSync(query: String): List<TaskEntity> = tasksFlow.value
     override suspend fun getTaskById(id: Long): TaskEntity? = tasksFlow.value.find { it.id == id }
+    override suspend fun getRecurringTasks(): List<TaskEntity> = tasksFlow.value.filter { it.repeatType != "ONCE" }
     override suspend fun addTask(task: TaskEntity): Long = 1L
     override suspend fun updateTask(task: TaskEntity) {
         lastUpdatedTask = task

@@ -10,6 +10,7 @@ interface TaskRepository {
     fun searchTasks(query: String): Flow<List<TaskEntity>>
     suspend fun searchTasksSync(query: String): List<TaskEntity>
     suspend fun getTaskById(id: Long): TaskEntity?
+    suspend fun getRecurringTasks(): List<TaskEntity>
     suspend fun addTask(task: TaskEntity): Long
     suspend fun updateTask(task: TaskEntity)
     suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean)

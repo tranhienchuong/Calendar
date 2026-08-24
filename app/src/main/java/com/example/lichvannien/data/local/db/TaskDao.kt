@@ -45,6 +45,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     fun getTaskById(id: Long): TaskEntity?
 
+    @Query("SELECT * FROM tasks WHERE repeatType != 'ONCE'")
+    fun getRecurringTasks(): List<TaskEntity>
+
     @Delete
     fun deleteTask(task: TaskEntity)
 

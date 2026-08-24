@@ -162,4 +162,57 @@ object TaskDateTimeHelper {
 
         return nextDate.format(dateFormatter)
     }
+
+    /**
+     * Tính toán ngày kích hoạt tiếp theo cho một task lặp lại trong quá khứ khi bước sang ngày mới (today).
+     * Đảm bảo task lặp lại từ hôm qua hoặc các ngày trước sẽ tự động chuyển sang hôm nay (hoặc chu kỳ tiếp theo).
+     */
+    fun calculateNextActiveDate(
+        currentDateStr: String?,
+        repeatType: String,
+        today: LocalDate = LocalDate.now()
+    ): String {
+        val rule = TaskRepeatRule.fromCode(repeatType)
+        val taskDate = parseDate(currentDateStr) ?: today
+
+        if (!taskDate.isBefore(today)) {
+            return taskDate.format(dateFormatter)
+        }
+
+        val nextDate = when (rule) {
+            TaskRepeatRule.ONCE -> taskDate
+            TaskRepeatRule.DAILY -> today
+            TaskRepeatRule.WEEKDAYS -> {
+                var d = today
+                while (d.dayOfWeek.value > 5) { // 6 = Saturday, 7 = Sunday
+                    d = d.plusDays(1)
+                }
+                d
+            }
+            TaskRepeatRule.WEEKLY -> {
+                val targetDayOfWeek = taskDate.dayOfWeek
+                var d = today
+                while (d.dayOfWeek != targetDayOfWeek) {
+                    d = d.plusDays(1)
+                }
+                d
+            }
+            TaskRepeatRule.MONTHLY -> {
+                var d = taskDate
+                while (d.isBefore(today)) {
+                    d = d.plusMonths(1)
+                }
+                d
+            }
+            TaskRepeatRule.YEARLY -> {
+                var d = taskDate
+                while (d.isBefore(today)) {
+                    d = d.plusYears(1)
+                }
+                d
+            }
+        }
+
+        return nextDate.format(dateFormatter)
+    }
 }

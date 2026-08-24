@@ -68,32 +68,40 @@ class TodayViewModel @Inject constructor(
         initialValue = TodayUiState()
     )
 
+    init {
+        refreshRecurringTasks()
+    }
+
+    fun refreshRecurringTasks(today: LocalDate = LocalDate.now()) {
+        viewModelScope.launch {
+            val recurringTasks = taskRepository.getRecurringTasks()
+            for (task in recurringTasks) {
+                val taskDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.parseDate(task.date)
+                if (taskDate != null && taskDate.isBefore(today)) {
+                    val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextActiveDate(task.date, task.repeatType, today)
+                    val refreshedTask = task.copy(
+                        date = nextDate,
+                        isCompleted = false
+                    )
+                    taskRepository.updateTask(refreshedTask)
+                    reminderScheduler?.scheduleTaskReminder(refreshedTask)
+                }
+            }
+        }
+    }
+
     fun toggleScheduleExpanded() {
         _isScheduleExpanded.update { !it }
     }
 
     fun toggleTask(id: Long, isCompleted: Boolean) {
         viewModelScope.launch {
-            val task = taskRepository.getTaskById(id)
-            if (task == null) {
-                taskRepository.toggleTaskCompleted(id, isCompleted)
-                return@launch
-            }
-
-            val repeatRule = com.example.lichvannien.ui.task.util.TaskRepeatRule.fromCode(task.repeatType)
-            if (isCompleted && repeatRule != com.example.lichvannien.ui.task.util.TaskRepeatRule.ONCE) {
-                val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextOccurrenceDate(task.date, task.repeatType)
-                val updatedTask = task.copy(
-                    date = nextDate,
-                    isCompleted = false
-                )
-                taskRepository.updateTask(updatedTask)
-                reminderScheduler?.scheduleTaskReminder(updatedTask)
+            taskRepository.toggleTaskCompleted(id, isCompleted)
+            if (isCompleted) {
+                reminderScheduler?.cancelTaskReminder(id)
             } else {
-                taskRepository.toggleTaskCompleted(id, isCompleted)
-                if (isCompleted) {
-                    reminderScheduler?.cancelTaskReminder(id)
-                } else {
+                val task = taskRepository.getTaskById(id)
+                if (task != null) {
                     reminderScheduler?.scheduleTaskReminder(task.copy(isCompleted = false))
                 }
             }

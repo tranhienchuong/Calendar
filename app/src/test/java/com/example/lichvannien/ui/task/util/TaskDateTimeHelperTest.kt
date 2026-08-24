@@ -135,4 +135,34 @@ class TaskDateTimeHelperTest {
         )
         assertThat(next).isEqualTo("2026-08-25")
     }
+
+    @Test
+    fun calculateNextActiveDate_pastDaily_returnsToday() {
+        val next = TaskDateTimeHelper.calculateNextActiveDate(
+            currentDateStr = "2026-08-23", // yesterday
+            repeatType = "DAILY",
+            today = LocalDate.of(2026, 8, 24)
+        )
+        assertThat(next).isEqualTo("2026-08-24") // today
+    }
+
+    @Test
+    fun calculateNextActiveDate_pastWeekdaysFromFriday_returnsMonday() {
+        val next = TaskDateTimeHelper.calculateNextActiveDate(
+            currentDateStr = "2026-08-21", // Friday
+            repeatType = "WEEKDAYS",
+            today = LocalDate.of(2026, 8, 24) // Monday
+        )
+        assertThat(next).isEqualTo("2026-08-24")
+    }
+
+    @Test
+    fun calculateNextActiveDate_futureOrTodayTask_keepsOriginalDate() {
+        val next = TaskDateTimeHelper.calculateNextActiveDate(
+            currentDateStr = "2026-08-25",
+            repeatType = "DAILY",
+            today = LocalDate.of(2026, 8, 24)
+        )
+        assertThat(next).isEqualTo("2026-08-25")
+    }
 }

@@ -132,6 +132,7 @@ private class FakeTaskRepository : TaskRepository {
     override fun searchTasks(query: String): Flow<List<TaskEntity>> = flowOf(taskList.filter { it.title.contains(query, ignoreCase = true) })
     override suspend fun searchTasksSync(query: String): List<TaskEntity> = taskList.filter { it.title.contains(query, ignoreCase = true) }
     override suspend fun getTaskById(id: Long): TaskEntity? = taskList.find { it.id == id }
+    override suspend fun getRecurringTasks(): List<TaskEntity> = taskList.filter { it.repeatType != "ONCE" }
     override suspend fun addTask(task: TaskEntity): Long = 1L
     override suspend fun updateTask(task: TaskEntity) {}
     override suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean) {}
