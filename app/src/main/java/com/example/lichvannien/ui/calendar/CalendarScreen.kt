@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -74,18 +75,24 @@ fun CalendarScreen(
         viewModel.loadMonth(settledMonth.year, settledMonth.monthValue)
     }
 
+    val fabColor = Color(0xFFFBBF24)
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddTaskDialog = true },
-                containerColor = AppHeaderBlue,
+                containerColor = fabColor,
                 contentColor = Color.White,
                 shape = CircleShape,
-                modifier = Modifier.size(54.dp)
+                modifier = Modifier
+                    .size(54.dp)
+                    .shadow(elevation = 6.dp, shape = CircleShape, ambientColor = fabColor, spotColor = fabColor)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Thêm sự kiện"
+                    contentDescription = "Thêm sự kiện",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
                 )
             }
         },
@@ -370,17 +377,17 @@ fun DayCell(
         verticalArrangement = Arrangement.Center
     ) {
         if (isSelected) {
-            // Selected circle badge matching Image 1
+            // Selected circle badge màu Vàng Cam Minimalist
             Box(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(CircleShape)
-                    .background(AppHeaderBlue),
+                    .background(Color(0xFFF59E0B)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = day.solarDayText,
-                    color = solarDayColor,
+                    color = Color.White,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -391,7 +398,7 @@ fun DayCell(
                 Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = day.lunarDayText,
-                    color = AppHeaderBlue,
+                    color = Color(0xFFD97706),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -401,7 +408,7 @@ fun DayCell(
             if (day.isToday) {
                 Text(
                     text = "Hôm nay",
-                    color = AppHeaderBlue,
+                    color = Color(0xFFD97706),
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -411,9 +418,9 @@ fun DayCell(
             // Normal Day Cell
             Text(
                 text = day.solarDayText,
-                color = solarDayColor,
+                color = if (day.isToday) Color(0xFFD97706) else solarDayColor,
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (day.isToday) FontWeight.Black else FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
@@ -421,7 +428,7 @@ fun DayCell(
                 val hasSubLabel = day.lunarSubLabel != null
                 Text(
                     text = day.lunarDayText,
-                    color = if (hasSubLabel) Color(0xFF8B0000) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (hasSubLabel) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     textAlign = TextAlign.Center,
                     fontWeight = if (hasSubLabel) FontWeight.SemiBold else FontWeight.Normal
@@ -430,7 +437,7 @@ fun DayCell(
                 if (day.lunarSubLabel != null) {
                     Text(
                         text = day.lunarSubLabel,
-                        color = Color(0xFFC62828),
+                        color = Color(0xFFDC2626),
                         fontSize = 7.5.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -466,7 +473,7 @@ fun SelectedDateScheduleCard(
 
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 6.dp
     ) {
@@ -482,7 +489,7 @@ fun SelectedDateScheduleCard(
                     .width(36.dp)
                     .height(4.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -518,41 +525,12 @@ fun SelectedDateScheduleCard(
                 ) {
                     items(tasks.size, key = { tasks[it].id }) { index ->
                         val task = tasks[index]
-                        val barColor = if (index % 2 == 0) AppHeaderBlue else Color(0xFF9E8047)
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Vertical colored bar indicator (Matching Image 1)
-                            Box(
-                                modifier = Modifier
-                                    .width(3.5.dp)
-                                    .height(36.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(barColor)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                val timeText = if (task.startTime != null) "${task.startTime} - " else ""
-                                Text(
-                                    text = "$timeText${task.title}",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                if (!task.location.isNullOrBlank()) {
-                                    Spacer(modifier = Modifier.height(1.dp))
-                                    Text(
-                                        text = task.location,
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
+                        com.example.lichvannien.ui.task.components.TaskItemCard(
+                            task = task,
+                            onToggle = {},
+                            onEdit = {},
+                            onDelete = {}
+                        )
                     }
                 }
             }

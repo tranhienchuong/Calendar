@@ -2,74 +2,98 @@ package com.example.lichvannien.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light Theme Colors (Đỏ / Cam ấm cúng may mắn)
-val RedPrimary = Color(0xFFD32F2F)
+// Minimalist Pastel & Warm Amber Theme Colors
+val AppAccentAmber = Color(0xFFF59E0B)
+val AppAccentAmberLight = Color(0xFFFBBF24)
+val AppAccentAmberDark = Color(0xFFD97706)
+
+// Theme Primary Colors (Hổ Phách / Vàng Cát Tường Sang Trọng)
+val RedPrimary = Color(0xFFF59E0B)
 val RedOnPrimary = Color(0xFFFFFFFF)
-val RedPrimaryContainer = Color(0xFFFFDAD6)
-val RedOnPrimaryContainer = Color(0xFF410002)
+val RedPrimaryContainer = Color(0xFFFEF3C7)
+val RedOnPrimaryContainer = Color(0xFF451A03)
 
-val OrangeSecondary = Color(0xFFF57C00)
+val OrangeSecondary = Color(0xFFF97316)
 val OrangeOnSecondary = Color(0xFFFFFFFF)
-val OrangeSecondaryContainer = Color(0xFFFFDDB8)
-val OrangeOnSecondaryContainer = Color(0xFF2B1700)
+val OrangeSecondaryContainer = Color(0xFFFFEDD5)
+val OrangeOnSecondaryContainer = Color(0xFF431407)
 
-val GreenTertiary = Color(0xFF2E7D32)
+val GreenTertiary = Color(0xFF10B981)
 val GreenOnTertiary = Color(0xFFFFFFFF)
 
-val BackgroundLight = Color(0xFFFFFDFD)
-val OnBackgroundLight = Color(0xFF251A1A)
+val BackgroundLight = Color(0xFFF9FAFB)
+val OnBackgroundLight = Color(0xFF111827)
 val SurfaceLight = Color(0xFFFFFFFF)
-val OnSurfaceLight = Color(0xFF251A1A)
+val OnSurfaceLight = Color(0xFF111827)
 
-val RedError = Color(0xFFBA1A1A)
+val RedError = Color(0xFFDC2626)
 val RedOnError = Color(0xFFFFFFFF)
 
 // Dark Theme Colors
-val RedPrimaryDark = Color(0xFFFFB4AB)
-val RedOnPrimaryDark = Color(0xFF690005)
-val RedPrimaryContainerDark = Color(0xFF93000A)
-val RedOnPrimaryContainerDark = Color(0xFFFFDAD6)
+val RedPrimaryDark = Color(0xFFFBBF24)
+val RedOnPrimaryDark = Color(0xFF451A03)
+val RedPrimaryContainerDark = Color(0xFF78350F)
+val RedOnPrimaryContainerDark = Color(0xFFFEF3C7)
 
-val OrangeSecondaryDark = Color(0xFFFFB74D)
-val OrangeOnSecondaryDark = Color(0xFF4D2700)
-val OrangeSecondaryContainerDark = Color(0xFF6E3A00)
-val OrangeOnSecondaryContainerDark = Color(0xFFFFDDB8)
+val OrangeSecondaryDark = Color(0xFFFB923C)
+val OrangeOnSecondaryDark = Color(0xFF431407)
+val OrangeSecondaryContainerDark = Color(0xFF7C2D12)
+val OrangeOnSecondaryContainerDark = Color(0xFFFFEDD5)
 
-val GreenTertiaryDark = Color(0xFF81C784)
-val GreenOnTertiaryDark = Color(0xFF00390E)
+val GreenTertiaryDark = Color(0xFF34D399)
+val GreenOnTertiaryDark = Color(0xFF064E3B)
 
-val BackgroundDark = Color(0xFF151313)
-val OnBackgroundDark = Color(0xFFECE0DF)
-val SurfaceDark = Color(0xFF1D1B1B)
-val OnSurfaceDark = Color(0xFFECE0DF)
+val BackgroundDark = Color(0xFF121212)
+val OnBackgroundDark = Color(0xFFF9FAFB)
+val SurfaceDark = Color(0xFF1E1E1E)
+val OnSurfaceDark = Color(0xFFF9FAFB)
 
-// Hoàng Đạo / Hắc Đạo Cố Định (Độc lập với color scheme)
-val ColorHoangDaoBgLight = Color(0xFFFFFDED)
-val ColorHoangDaoTextLight = Color(0xFF8D6E63)
-val ColorHoangDaoBgDark = Color(0xFF3E2723)
-val ColorHoangDaoTextDark = Color(0xFFFFD54F)
+// Hoàng Đạo / Hắc Đạo Cố Định Pastel
+val ColorHoangDaoBgLight = Color(0xFFFFF2D9)
+val ColorHoangDaoTextLight = Color(0xFFB45309)
+val ColorHoangDaoBgDark = Color(0xFF2C2417)
+val ColorHoangDaoTextDark = Color(0xFFFBBF24)
 
-val ColorHacDaoBgLight = Color.Transparent
-val ColorHacDaoTextLight = OnSurfaceLight
-val ColorHacDaoBgDark = Color.Transparent
-val ColorHacDaoTextDark = OnSurfaceDark
+val ColorHacDaoBgLight = Color(0xFFFFE4CE)
+val ColorHacDaoTextLight = Color(0xFFC2410C)
+val ColorHacDaoBgDark = Color(0xFF33231A)
+val ColorHacDaoTextDark = Color(0xFFFB923C)
 
 // Màu cuối tuần độ tương phản cao
-val ColorSaturdayLight = Color(0xFF0D47A1)
-val ColorSaturdayDark = Color(0xFF90CAF9)
-val ColorSundayLight = Color(0xFFD32F2F)
-val ColorSundayDark = Color(0xFFFFB4AB)
+val ColorSaturdayLight = Color(0xFF0284C7)
+val ColorSaturdayDark = Color(0xFF38BDF8)
+val ColorSundayLight = Color(0xFFDC2626)
+val ColorSundayDark = Color(0xFFF87171)
 
-// Màu giao diện Lịch Việt 2026 mới
-val AppHeaderBlue = Color(0xFF1565C0)
-val AppHeaderDarkBlue = Color(0xFF0D47A1)
-val LunarCardBgLight = Color(0xFFEBF3FB)
-val LunarCardBgDark = Color(0xFF1E293B)
-val TaskOngoingGreen = Color(0xFF2E7D32)
-val TaskOngoingBgLight = Color(0xFFE8F5E9)
-val TaskOngoingBgDark = Color(0xFF1B3820)
-val AiChatBubbleUser = Color(0xFF1976D2)
-val AiChatBubbleAiLight = Color(0xFFF0F2F5)
-val AiChatBubbleAiDark = Color(0xFF2D3748)
-val AppNavActiveBg = Color(0xFF0D47A1)
+// Màu giao diện Minimalist Pastel mới (Đồng bộ toàn bộ app)
+val AppHeaderBlue = Color(0xFFF59E0B) // Alias cho các thành phần cũ
+val AppHeaderDarkBlue = Color(0xFFD97706)
+val LunarCardBgLight = Color(0xFFFFF2D9)
+val LunarCardBgDark = Color(0xFF2C2417)
+val TaskOngoingGreen = Color(0xFF059669)
+val TaskOngoingBgLight = Color(0xFFDEF7EC)
+val TaskOngoingBgDark = Color(0xFF172D22)
+val AiChatBubbleUser = Color(0xFFF59E0B)
+val AiChatBubbleAiLight = Color(0xFFF3F4F6)
+val AiChatBubbleAiDark = Color(0xFF262626)
+val AppNavActiveBg = Color(0xFFFEF3C7)
+val AppNavActiveBgDark = Color(0xFF382B12)
 
+// Bảng màu Pastel Cards dùng chung
+val PastelYellowCardBg = Color(0xFFFFF2D9)
+val PastelYellowCardBorder = Color(0xFFFDE68A)
+
+val PastelMintCardBg = Color(0xFFDEF7EC)
+val PastelMintCardBorder = Color(0xFFA7F3D0)
+
+val PastelBlueCardBg = Color(0xFFE0F2FE)
+val PastelBlueCardBorder = Color(0xFFBAE6FD)
+
+val PastelPeachCardBg = Color(0xFFFFE4CE)
+val PastelPeachCardBorder = Color(0xFFFED7AA)
+
+val PastelPinkCardBg = Color(0xFFFCE7F3)
+val PastelPinkCardBorder = Color(0xFFFBCFE8)
+
+val PastelPurpleCardBg = Color(0xFFF3E8FF)
+val PastelPurpleCardBorder = Color(0xFFDDD6FE)

@@ -35,6 +35,10 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.searchTasks(query)
     }
 
+    override suspend fun getTaskById(id: Long): TaskEntity? = withContext(Dispatchers.IO) {
+        taskDao.getTaskById(id)
+    }
+
     override suspend fun addTask(task: TaskEntity): Long = withContext(Dispatchers.IO) {
         taskDao.insertTask(task)
     }

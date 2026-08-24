@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
 
-@Database(entities = [SpecialDayEntity::class, TaskEntity::class], version = 4, exportSchema = false)
+@Database(entities = [SpecialDayEntity::class, TaskEntity::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun specialDayDao(): SpecialDayDao

@@ -36,7 +36,8 @@ class TodayViewModel @Inject constructor(
     private val specialDayRepository: SpecialDayRepository,
     private val taskRepository: TaskRepository,
     private val lunarConverter: LunarConverter,
-    private val auspiciousCalculator: AuspiciousCalculator
+    private val auspiciousCalculator: AuspiciousCalculator,
+    private val reminderScheduler: com.example.lichvannien.ui.task.reminder.TaskReminderScheduler? = null
 ) : ViewModel() {
 
     private val _isScheduleExpanded = MutableStateFlow(true)
@@ -73,7 +74,29 @@ class TodayViewModel @Inject constructor(
 
     fun toggleTask(id: Long, isCompleted: Boolean) {
         viewModelScope.launch {
-            taskRepository.toggleTaskCompleted(id, isCompleted)
+            val task = taskRepository.getTaskById(id)
+            if (task == null) {
+                taskRepository.toggleTaskCompleted(id, isCompleted)
+                return@launch
+            }
+
+            val repeatRule = com.example.lichvannien.ui.task.util.TaskRepeatRule.fromCode(task.repeatType)
+            if (isCompleted && repeatRule != com.example.lichvannien.ui.task.util.TaskRepeatRule.ONCE) {
+                val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextOccurrenceDate(task.date, task.repeatType)
+                val updatedTask = task.copy(
+                    date = nextDate,
+                    isCompleted = false
+                )
+                taskRepository.updateTask(updatedTask)
+                reminderScheduler?.scheduleTaskReminder(updatedTask)
+            } else {
+                taskRepository.toggleTaskCompleted(id, isCompleted)
+                if (isCompleted) {
+                    reminderScheduler?.cancelTaskReminder(id)
+                } else {
+                    reminderScheduler?.scheduleTaskReminder(task.copy(isCompleted = false))
+                }
+            }
         }
     }
 
@@ -89,7 +112,10 @@ class TodayViewModel @Inject constructor(
                 category = "WORK",
                 colorHex = 0xFF1976D2
             )
-            taskRepository.addTask(task)
+            val generatedId = taskRepository.addTask(task)
+            if (generatedId > 0) {
+                reminderScheduler?.scheduleTaskReminder(task.copy(id = generatedId))
+            }
         }
     }
 }

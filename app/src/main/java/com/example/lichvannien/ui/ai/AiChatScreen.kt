@@ -68,7 +68,7 @@ fun AiChatScreen(
         val suggestions = listOf(
             "🔮 Tử vi hôm nay",
             "⭐ Giờ đẹp xuất hành",
-            "🗓️ Lập lịch cuộc họp",
+            "🗓️ Lập lịch công việc",
             "🎋 Xem ngày tốt xấu"
         )
 
@@ -81,14 +81,15 @@ fun AiChatScreen(
             items(suggestions) { suggestion ->
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    color = if (isDark) Color(0xFF2C2417) else Color(0xFFFEF3C7),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0xFF534125) else Color(0xFFFDE68A)),
                     modifier = Modifier.clickable { viewModel.sendMessage(suggestion) }
                 ) {
                     Text(
                         text = suggestion,
                         fontSize = 12.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
@@ -119,11 +120,11 @@ fun AiChatScreen(
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp,
-                            color = AppHeaderBlue
+                            color = Color(0xFFF59E0B)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI đang phản hồi...",
+                            text = "AI đang soạn câu trả lời...",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -151,8 +152,8 @@ fun AiChatScreen(
                     .padding(end = 8.dp),
                 maxLines = 3,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppHeaderBlue,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    focusedBorderColor = Color(0xFFF59E0B),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
             )
 
@@ -162,7 +163,7 @@ fun AiChatScreen(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(if (state.inputText.isNotBlank()) AppHeaderBlue else MaterialTheme.colorScheme.surfaceVariant)
+                    .background(if (state.inputText.isNotBlank()) Color(0xFFFBBF24) else MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
@@ -180,6 +181,7 @@ fun ChatMessageItem(
     aiBubbleBg: Color,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
     if (message.sender == MessageSender.AI) {
         // AI Message: Left Aligned with Bot Avatar
         Row(
@@ -191,13 +193,13 @@ fun ChatMessageItem(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(AppHeaderBlue.copy(alpha = 0.15f)),
+                    .background(if (isDark) Color(0xFF2C2417) else Color(0xFFFEF3C7)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = "AI",
-                    tint = AppHeaderBlue,
+                    tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
                     modifier = Modifier.size(18.dp)
                 )
             }

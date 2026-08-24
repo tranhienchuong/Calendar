@@ -2,14 +2,17 @@ package com.example.lichvannien.ui.today
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -19,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.lichvannien.R
 import com.example.lichvannien.data.local.entity.TaskEntity
 import com.example.lichvannien.theme.*
+import com.example.lichvannien.ui.task.components.TaskItemCard
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -43,23 +48,28 @@ fun TodayScreen(
     var showAddTaskDialog by remember { mutableStateOf(false) }
 
     val isDark = isSystemInDarkTheme()
-    val lunarCardBg = if (isDark) LunarCardBgDark else LunarCardBgLight
+    val fabColor = Color(0xFFFBBF24)
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddTaskDialog = true },
-                containerColor = AppHeaderBlue,
+                containerColor = fabColor,
                 contentColor = Color.White,
                 shape = CircleShape,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier
+                    .size(56.dp)
+                    .shadow(elevation = 6.dp, shape = CircleShape, ambientColor = fabColor, spotColor = fabColor)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Thêm lịch trình"
+                    contentDescription = "Thêm lịch trình",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
                 )
             }
         },
+        containerColor = if (isDark) Color(0xFF121212) else Color(0xFFF9FAFB),
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -73,7 +83,6 @@ fun TodayScreen(
             item(key = "top_today_card") {
                 TodayHeaderCard(
                     state = state,
-                    lunarCardBg = lunarCardBg,
                     onCardClick = {
                         onDayDetailClick(
                             state.today.year,
@@ -84,12 +93,12 @@ fun TodayScreen(
                 )
             }
 
-            // 2. Card Giờ Hoàng Đạo
+            // 2. Card Giờ Hoàng Đạo (Pastel Mint Theme)
             item(key = "auspicious_hours_card") {
                 AuspiciousHoursCard(state = state)
             }
 
-            // 3. Card Sự kiện & Ngày đặc biệt (Thay cho Thời tiết & Lập kế hoạch tuần)
+            // 3. Card Sự kiện & Ngày đặc biệt (Pastel Yellow Theme)
             item(key = "special_events_card") {
                 SpecialEventsTodayCard(state = state)
             }
@@ -125,10 +134,10 @@ fun TodayScreen(
 @Composable
 fun TodayHeaderCard(
     state: TodayUiState,
-    lunarCardBg: Color,
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
     val dayOfWeekName = when (state.today.dayOfWeek.value) {
         1 -> "Thứ Hai"
         2 -> "Thứ Ba"
@@ -139,23 +148,22 @@ fun TodayHeaderCard(
         else -> "Chủ Nhật"
     }
 
-    ElevatedCard(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
             .clickable { onCardClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(18.dp),
+        color = if (isDark) Color(0xFF1E1E1E) else Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0xFF333333) else Color(0xFFE5E7EB))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bên trái: Thứ, Số ngày Dương to lớn màu xanh, Tháng & Năm
+            // Bên trái: Thứ, Số ngày Dương to lớn màu vàng cam, Tháng & Năm
             Column(
                 modifier = Modifier
                     .weight(1.2f)
@@ -164,32 +172,33 @@ fun TodayHeaderCard(
             ) {
                 Text(
                     text = dayOfWeekName,
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = if (state.today.dayOfWeek.value == 7) ColorSundayLight else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${state.today.dayOfMonth}",
-                    fontSize = 68.sp,
+                    fontSize = 64.sp,
                     fontWeight = FontWeight.Black,
-                    color = AppHeaderBlue,
-                    lineHeight = 70.sp
+                    color = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
+                    lineHeight = 68.sp
                 )
                 Text(
                     text = "Tháng ${state.today.monthValue}, ${state.today.year}",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Bên phải: Khối bo góc Âm lịch & Can Chi
+            // Bên phải: Khối bo góc Âm lịch & Can Chi màu Pastel Vàng
             Box(
                 modifier = Modifier
-                    .weight(0.9f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(lunarCardBg)
-                    .padding(vertical = 24.dp, horizontal = 12.dp),
+                    .weight(0.95f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isDark) Color(0xFF2C2417) else Color(0xFFFFF2D9))
+                    .border(1.dp, if (isDark) Color(0xFF534125) else Color(0xFFFDE68A), RoundedCornerShape(16.dp))
+                    .padding(vertical = 20.dp, horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -200,21 +209,21 @@ fun TodayHeaderCard(
                         text = "${state.lunarDate.day}/${state.lunarDate.month}",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (isDark) Color(0xFFFBBF24) else Color(0xFF92400E)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Âm lịch",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isDark) Color.White.copy(alpha = 0.7f) else Color(0xFFB45309)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "(${state.lunarDate.canChiDay})",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) Color.White.copy(alpha = 0.85f) else Color(0xFF78350F)
                     )
                 }
             }
@@ -227,34 +236,63 @@ fun AuspiciousHoursCard(
     state: TodayUiState,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(
+    val isDark = isSystemInDarkTheme()
+    val isHoangDao = state.auspicious.isHoangDao
+
+    val bg = if (isDark) {
+        if (isHoangDao) Color(0xFF172D22) else Color(0xFF33231A)
+    } else {
+        if (isHoangDao) Color(0xFFDEF7EC) else Color(0xFFFFE4CE)
+    }
+
+    val borderCol = if (isDark) {
+        if (isHoangDao) Color(0xFF1E4833) else Color(0xFF5A3926)
+    } else {
+        if (isHoangDao) Color(0xFFA7F3D0) else Color(0xFFFED7AA)
+    }
+
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = bg,
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderCol)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
-            Text(
-                text = "Giờ Hoàng Đạo",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = if (isHoangDao) Color(0xFF059669) else Color(0xFFEA580C),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHoangDao) "Ngày Hoàng Đạo (Cát Lành)" else "Ngày Hắc Đạo (Cẩn Trọng)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color.White else (if (isHoangDao) Color(0xFF065F46) else Color(0xFF9A3412))
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
             val hoursText = if (state.auspicious.gioHoangDao.isNotEmpty()) {
-                "Giờ - " + state.auspicious.gioHoangDao.joinToString(", ")
+                "Giờ tốt: " + state.auspicious.gioHoangDao.joinToString(", ")
             } else {
-                "Giờ - 5:00, 9:00, 12:00, 15:00-21:00"
+                "Giờ tốt: Tí (23-1), Sửu (1-3), Mão (5-7), Ngọ (11-13)"
             }
             Text(
                 text = hoursText,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 18.sp
+                fontSize = 13.5.sp,
+                color = if (isDark) Color.White.copy(alpha = 0.8f) else (if (isHoangDao) Color(0xFF047857) else Color(0xFFC2410C)),
+                lineHeight = 19.sp
             )
         }
     }
@@ -265,16 +303,16 @@ fun SpecialEventsTodayCard(
     state: TodayUiState,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(
+    val isDark = isSystemInDarkTheme()
+
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = if (isDark) Color(0xFF1E1E1E) else Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0xFF333333) else Color(0xFFE5E7EB))
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -283,7 +321,7 @@ fun SpecialEventsTodayCard(
                 Icon(
                     imageVector = Icons.Default.Celebration,
                     contentDescription = null,
-                    tint = OrangeSecondary,
+                    tint = Color(0xFFF59E0B),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -319,7 +357,7 @@ fun SpecialEventsTodayCard(
                                 text = event.name,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppHeaderBlue
+                                color = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706)
                             )
                         }
                     }
@@ -338,13 +376,13 @@ fun TodayScheduleSection(
     onAddTaskClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(
+    val isDark = isSystemInDarkTheme()
+
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(18.dp),
+        color = if (isDark) Color(0xFF1E1E1E) else Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0xFF333333) else Color(0xFFE5E7EB))
     ) {
         Column(
             modifier = Modifier
@@ -358,12 +396,21 @@ fun TodayScheduleSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.today_schedule_title),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.today_schedule_title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = if (isExpanded) "Thu gọn" else "Mở rộng",
@@ -375,127 +422,29 @@ fun TodayScheduleSection(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .padding(top = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     if (tasks.isEmpty()) {
                         Text(
-                            text = "Chưa có lịch trình cho hôm nay. Nhấn nút + để thêm!",
+                            text = "Chưa có lịch trình cho hôm nay. Nhấn nút + màu vàng để thêm!",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     } else {
                         tasks.forEach { task ->
-                            TodayScheduleItem(
+                            TaskItemCard(
                                 task = task,
-                                onTaskToggle = onTaskToggle
+                                onToggle = { isDone -> onTaskToggle(task.id, isDone) },
+                                onEdit = {},
+                                onDelete = {}
                             )
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun TodayScheduleItem(
-    task: TaskEntity,
-    onTaskToggle: (Long, Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val isOngoing = remember(task.startTime, task.endTime) {
-        checkIfTaskIsOngoing(task.startTime, task.endTime)
-    }
-
-    val isDark = isSystemInDarkTheme()
-    val ongoingBg = if (isDark) TaskOngoingBgDark else TaskOngoingBgLight
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isOngoing) ongoingBg else Color.Transparent)
-            .padding(horizontal = 4.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Vertical Color Indicator
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(38.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(if (isOngoing) TaskOngoingGreen else Color(task.colorHex))
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                val timePrefix = when {
-                    task.startTime != null && task.endTime != null -> "${task.startTime} - "
-                    task.startTime != null -> "${task.startTime} - "
-                    task.deadline != null -> "Deadline: ${task.deadline} - "
-                    else -> ""
-                }
-                Text(
-                    text = "$timePrefix${task.title}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                )
-                if (isOngoing) {
-                    Surface(
-                        color = TaskOngoingGreen,
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.ongoing_badge),
-                            color = Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-            }
-
-            if (!task.location.isNullOrBlank()) {
-                Text(
-                    text = task.location,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Checkbox(
-            checked = task.isCompleted,
-            onCheckedChange = { onTaskToggle(task.id, it) },
-            colors = CheckboxDefaults.colors(
-                checkedColor = AppHeaderBlue
-            )
-        )
-    }
-}
-
-private fun checkIfTaskIsOngoing(startStr: String?, endStr: String?): Boolean {
-    if (startStr == null) return false
-    return try {
-        val now = LocalTime.now()
-        val start = LocalTime.parse(startStr.trim(), DateTimeFormatter.ofPattern("HH:mm"))
-        val end = if (endStr != null) {
-            LocalTime.parse(endStr.trim(), DateTimeFormatter.ofPattern("HH:mm"))
-        } else {
-            start.plusHours(1)
-        }
-        !now.isBefore(start) && now.isBefore(end)
-    } catch (_: Exception) {
-        false
     }
 }
 
@@ -511,19 +460,22 @@ fun AddTodayTaskDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.add_task_dialog_title)) },
+        shape = RoundedCornerShape(18.dp),
+        title = { Text(text = "Thêm lịch trình hôm nay", fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.hint_task_title)) },
+                    label = { Text("Tên công việc") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -531,23 +483,27 @@ fun AddTodayTaskDialog(
                     OutlinedTextField(
                         value = startTime,
                         onValueChange = { startTime = it },
-                        label = { Text("Bắt đầu (14:00)") },
+                        label = { Text("Bắt đầu (09:00)") },
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
                         value = endTime,
                         onValueChange = { endTime = it },
-                        label = { Text("Kết thúc (15:30)") },
+                        label = { Text("Kết thúc (11:30)") },
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
                     )
                 }
+
                 OutlinedTextField(
                     value = location,
                     onValueChange = { location = it },
-                    label = { Text(stringResource(R.string.hint_task_location)) },
+                    label = { Text("Địa điểm / Ghi chú") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -559,14 +515,16 @@ fun AddTodayTaskDialog(
                         onConfirm(title, startTime, endTime, location)
                     }
                 },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
                 enabled = title.isNotBlank()
             ) {
-                Text(stringResource(R.string.btn_save))
+                Text("Lưu lại", fontWeight = FontWeight.Bold, color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.btn_cancel))
+                Text("Hủy")
             }
         }
     )

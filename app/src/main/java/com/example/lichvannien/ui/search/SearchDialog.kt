@@ -263,10 +263,10 @@ fun SearchDialog(
                             }
 
                             items(state.tasks, key = { "task_${it.id}" }) { task ->
-                                TaskSearchResultItem(
+                                com.example.lichvannien.ui.task.components.TaskItemCard(
                                     task = task,
-                                    onClick = {
-                                        // Parse date "YYYY-MM-DD"
+                                    onToggle = {},
+                                    onEdit = {
                                         val parts = task.date.split("-")
                                         if (parts.size == 3) {
                                             val y = parts[0].toIntOrNull() ?: LocalDate.now().year
@@ -275,7 +275,8 @@ fun SearchDialog(
                                             onDismiss()
                                             onNavigateToDay(y, m, d)
                                         }
-                                    }
+                                    },
+                                    onDelete = {}
                                 )
                             }
                         }

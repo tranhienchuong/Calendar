@@ -44,8 +44,14 @@ function Invoke-AndroidAdb {
         [string[]]$Arguments
     )
 
-    $commandOutput = & $AdbPath @Arguments 2>&1
-    $exitCode = $LASTEXITCODE
+    $prevEap = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $commandOutput = & $AdbPath @Arguments 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
     $output = (@($commandOutput | ForEach-Object { $_.ToString() })) -join [Environment]::NewLine
 
     if ($exitCode -ne 0) {

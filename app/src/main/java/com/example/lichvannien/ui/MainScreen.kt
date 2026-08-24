@@ -3,6 +3,7 @@ package com.example.lichvannien.ui
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -86,23 +87,23 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(AppHeaderBlue)
-                            .padding(horizontal = 20.dp, vertical = 28.dp)
+                            .background(Color(0xFF1E1E1E))
+                            .padding(horizontal = 20.dp, vertical = 26.dp)
                     ) {
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
                                         .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.2f)),
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFFFBBF24)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
                                         contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
+                                        tint = Color(0xFF1E1E1E),
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -111,12 +112,12 @@ fun MainScreen(
                                         text = stringResource(R.string.app_header_title),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 20.sp
+                                        fontSize = 19.sp
                                     )
                                     Text(
                                         text = "Phong Thủy & Lịch Âm Dương",
-                                        color = Color.White.copy(alpha = 0.85f),
-                                        fontSize = 12.5.sp
+                                        color = Color(0xFFFBBF24).copy(alpha = 0.9f),
+                                        fontSize = 12.sp
                                     )
                                 }
                             }
@@ -125,7 +126,7 @@ fun MainScreen(
 
                             // Thẻ Bản Mệnh Phương Đông
                             Surface(
-                                color = Color.White.copy(alpha = 0.18f),
+                                color = Color(0xFF2C2C2C),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -154,7 +155,7 @@ fun MainScreen(
                                         )
                                         Text(
                                             text = "Mệnh: ${zodiacInfo.napAm}",
-                                            color = Color.White.copy(alpha = 0.9f),
+                                            color = Color(0xFFFBBF24).copy(alpha = 0.9f),
                                             fontSize = 12.sp
                                         )
                                     }
@@ -253,51 +254,61 @@ fun MainScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarToday,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.app_header_title),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { showSearchDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Tìm kiếm",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = AppHeaderBlue,
-                        titleContentColor = Color.White,
-                        navigationIconContentColor = Color.White,
-                        actionIconContentColor = Color.White
+                if (currentTab != Screen.Task.route) {
+                    TopAppBar(
+                        title = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(RoundedCornerShape(9.dp))
+                                        .background(if (isSystemInDarkTheme()) Color(0xFF2C2417) else Color(0xFFFEF3C7)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        tint = if (isSystemInDarkTheme()) Color(0xFFFBBF24) else Color(0xFFD97706),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = stringResource(R.string.app_header_title),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 19.sp
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Menu",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { showSearchDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Tìm kiếm",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     )
-                )
+                }
             },
             bottomBar = {
                 Surface(
@@ -674,9 +685,10 @@ private fun CustomBottomNavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeBgColor = AppNavActiveBg
-    val activeContentColor = Color.White
-    val inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val isDark = isSystemInDarkTheme()
+    val activeContentColor = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706)
+    val activePillBg = if (isDark) Color(0xFF2C2417) else Color(0xFFFEF3C7)
+    val inactiveContentColor = if (isDark) Color(0xFF9CA3AF) else Color(0xFF6B7280)
 
     Box(
         modifier = modifier
@@ -685,28 +697,34 @@ private fun CustomBottomNavItem(
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
-            Column(
+            Surface(
+                color = activePillBg,
+                shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
-                    .fillMaxHeight()
+                    .padding(horizontal = 6.dp, vertical = 6.dp)
                     .fillMaxWidth()
-                    .background(activeBgColor)
-                    .padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.label,
-                    tint = activeContentColor,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = item.label,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = activeContentColor
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.label,
+                        tint = activeContentColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = item.label,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = activeContentColor
+                    )
+                }
             }
         } else {
             Column(
@@ -721,12 +739,12 @@ private fun CustomBottomNavItem(
                     imageVector = item.icon,
                     contentDescription = item.label,
                     tint = inactiveContentColor,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = item.label,
-                    fontSize = 11.5.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     color = inactiveContentColor
                 )
