@@ -382,6 +382,21 @@ fun MainScreen(
                     }
                 }
 
+                // Tải trước ngầm các tab trong nền để lần chạm đầu tiên đạt tốc độ 0ms (không độ trễ)
+                LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(120)
+                    if (!visitedTabs.contains(Screen.CalendarMonth.route)) {
+                        visitedTabs.add(Screen.CalendarMonth.route)
+                    }
+                    kotlinx.coroutines.delay(100)
+                    if (!visitedTabs.contains(Screen.Task.route)) {
+                        visitedTabs.add(Screen.Task.route)
+                    }
+                    if (!visitedTabs.contains(Screen.AiChat.route)) {
+                        visitedTabs.add(Screen.AiChat.route)
+                    }
+                }
+
                 val onTodayDayDetailClick = remember(navController) {
                     { year: Int, month: Int, day: Int ->
                         navController.navigate(Screen.DayDetail.createRoute(year, month, day))

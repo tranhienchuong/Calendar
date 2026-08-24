@@ -73,7 +73,7 @@ class CalendarViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        private const val MAX_CACHE_SIZE = 12
+        private const val MAX_CACHE_SIZE = 48
     }
 
     private val monthCache = object : LinkedHashMap<YearMonth, ImmutableList<CalendarDayUiModel>>(MAX_CACHE_SIZE, 0.75f, true) {
@@ -265,19 +265,15 @@ class CalendarViewModel @Inject constructor(
     private fun preloadAdjacentMonths(baseMonth: YearMonth) {
         preloadJob?.cancel()
         preloadJob = viewModelScope.launch(defaultDispatcher) {
-            val prevMonth = baseMonth.minusMonths(1)
-            val nextMonth = baseMonth.plusMonths(1)
             var updated = false
-
-            if (getCachedMonth(prevMonth) == null) {
-                val prevDays = generateMonthDays(prevMonth)
-                putCachedMonth(prevMonth, prevDays)
-                updated = true
-            }
-            if (getCachedMonth(nextMonth) == null) {
-                val nextDays = generateMonthDays(nextMonth)
-                putCachedMonth(nextMonth, nextDays)
-                updated = true
+            // Preload 3 months in both directions: -1, +1, -2, +2, -3, +3
+            for (offset in listOf(-1, 1, -2, 2, -3, 3)) {
+                val targetMonth = baseMonth.plusMonths(offset.toLong())
+                if (getCachedMonth(targetMonth) == null) {
+                    val days = generateMonthDays(targetMonth)
+                    putCachedMonth(targetMonth, days)
+                    updated = true
+                }
             }
             if (updated) {
                 _uiState.update {

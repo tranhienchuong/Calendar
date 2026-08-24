@@ -146,12 +146,15 @@ fun CalendarScreen(
                     .fillMaxWidth()
                     .weight(1.35f)
             ) { page ->
+                val pageMonth = remember(page) { yearMonthFromPage(page) }
+                val days = uiState.monthDataMap[pageMonth] ?: persistentListOf()
+
                 MonthPage(
-                    page = page,
-                    uiState = uiState,
-                    viewModel = viewModel,
+                    pageMonth = pageMonth,
+                    days = days,
                     selectedDate = uiState.selectedDate,
                     onDayClick = handleDayClick,
+                    onDemandLoad = { viewModel.getMonthDays(pageMonth) },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -277,19 +280,16 @@ fun WeekdaysHeader(
 
 @Composable
 fun MonthPage(
-    page: Int,
-    uiState: CalendarUiState,
-    viewModel: CalendarViewModel,
+    pageMonth: YearMonth,
+    days: ImmutableList<CalendarDayUiModel>,
     selectedDate: LocalDate,
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
+    onDemandLoad: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val pageMonth = remember(page) { yearMonthFromPage(page) }
-    val days = uiState.monthDataMap[pageMonth] ?: persistentListOf()
-
-    LaunchedEffect(pageMonth) {
-        if (!uiState.monthDataMap.containsKey(pageMonth)) {
-            viewModel.getMonthDays(pageMonth)
+    LaunchedEffect(pageMonth, days.isEmpty()) {
+        if (days.isEmpty()) {
+            onDemandLoad()
         }
     }
 
