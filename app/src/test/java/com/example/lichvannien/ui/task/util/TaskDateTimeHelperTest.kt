@@ -85,58 +85,6 @@ class TaskDateTimeHelperTest {
     }
 
     @Test
-    fun calculateNextOccurrenceDate_daily_returnsNextDay() {
-        val next = TaskDateTimeHelper.calculateNextOccurrenceDate(
-            currentDateStr = "2026-08-24",
-            repeatType = "DAILY",
-            baseDate = LocalDate.of(2026, 8, 24)
-        )
-        assertThat(next).isEqualTo("2026-08-25")
-    }
-
-    @Test
-    fun calculateNextOccurrenceDate_weekdaysOnFriday_returnsNextMonday() {
-        // 2026-08-28 is Friday
-        val next = TaskDateTimeHelper.calculateNextOccurrenceDate(
-            currentDateStr = "2026-08-28",
-            repeatType = "WEEKDAYS",
-            baseDate = LocalDate.of(2026, 8, 28)
-        )
-        assertThat(next).isEqualTo("2026-08-31") // Monday
-    }
-
-    @Test
-    fun calculateNextOccurrenceDate_weekly_returnsNextWeek() {
-        val next = TaskDateTimeHelper.calculateNextOccurrenceDate(
-            currentDateStr = "2026-08-24",
-            repeatType = "WEEKLY",
-            baseDate = LocalDate.of(2026, 8, 24)
-        )
-        assertThat(next).isEqualTo("2026-08-31")
-    }
-
-    @Test
-    fun calculateNextOccurrenceDate_monthly_returnsNextMonth() {
-        val next = TaskDateTimeHelper.calculateNextOccurrenceDate(
-            currentDateStr = "2026-08-24",
-            repeatType = "MONTHLY",
-            baseDate = LocalDate.of(2026, 8, 24)
-        )
-        assertThat(next).isEqualTo("2026-09-24")
-    }
-
-    @Test
-    fun calculateNextOccurrenceDate_overduePastDate_anchorsFromToday() {
-        // Task was from 2026-08-10, today is 2026-08-24. Next daily task should be 2026-08-25
-        val next = TaskDateTimeHelper.calculateNextOccurrenceDate(
-            currentDateStr = "2026-08-10",
-            repeatType = "DAILY",
-            baseDate = LocalDate.of(2026, 8, 24)
-        )
-        assertThat(next).isEqualTo("2026-08-25")
-    }
-
-    @Test
     fun calculateNextActiveDate_pastDaily_returnsToday() {
         val next = TaskDateTimeHelper.calculateNextActiveDate(
             currentDateStr = "2026-08-23", // yesterday

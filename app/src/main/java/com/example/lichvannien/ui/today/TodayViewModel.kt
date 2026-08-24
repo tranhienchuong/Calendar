@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,28 +45,36 @@ class TodayViewModel @Inject constructor(
     private val today = LocalDate.now()
     private val todayStr = today.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
+    private val lunarDate = lunarConverter.solarToLunar(today.year, today.monthValue, today.dayOfMonth)
+    private val auspicious = auspiciousCalculator.calculate(lunarDate)
+
+    private val todaySpecialDaysFlow = flow {
+        val solarEvents = specialDayRepository.getEventsForSolarDate(today.monthValue, today.dayOfMonth)
+        val lunarEvents = specialDayRepository.getEventsForLunarDate(lunarDate.month, lunarDate.day, lunarDate.isLeapMonth)
+        emit(solarEvents + lunarEvents)
+    }
+
     val uiState: StateFlow<TodayUiState> = combine(
         taskRepository.getTasksForDate(todayStr),
+        todaySpecialDaysFlow,
         _isScheduleExpanded
-    ) { tasks, isExpanded ->
-        val lunar = lunarConverter.solarToLunar(today.year, today.monthValue, today.dayOfMonth)
-        val auspicious = auspiciousCalculator.calculate(lunar)
-        val solarEvents = specialDayRepository.getEventsForSolarDate(today.monthValue, today.dayOfMonth)
-        val lunarEvents = specialDayRepository.getEventsForLunarDate(lunar.month, lunar.day, lunar.isLeapMonth)
-        val allSpecialDays = solarEvents + lunarEvents
-
+    ) { tasks, specialDays, isExpanded ->
         TodayUiState(
             today = today,
-            lunarDate = lunar,
+            lunarDate = lunarDate,
             auspicious = auspicious,
-            specialDays = allSpecialDays,
+            specialDays = specialDays,
             todayTasks = tasks,
             isScheduleExpanded = isExpanded
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = TodayUiState()
+        initialValue = TodayUiState(
+            today = today,
+            lunarDate = lunarDate,
+            auspicious = auspicious
+        )
     )
 
     init {
@@ -75,6 +84,7 @@ class TodayViewModel @Inject constructor(
     fun refreshRecurringTasks(today: LocalDate = LocalDate.now()) {
         viewModelScope.launch {
             val recurringTasks = taskRepository.getRecurringTasks()
+            val tasksToUpdate = mutableListOf<TaskEntity>()
             for (task in recurringTasks) {
                 val taskDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.parseDate(task.date)
                 if (taskDate != null && taskDate.isBefore(today)) {
@@ -83,9 +93,12 @@ class TodayViewModel @Inject constructor(
                         date = nextDate,
                         isCompleted = false
                     )
-                    taskRepository.updateTask(refreshedTask)
+                    tasksToUpdate.add(refreshedTask)
                     reminderScheduler?.scheduleTaskReminder(refreshedTask)
                 }
+            }
+            if (tasksToUpdate.isNotEmpty()) {
+                taskRepository.updateTasks(tasksToUpdate)
             }
         }
     }

@@ -135,6 +135,7 @@ private class FakeTaskRepository : TaskRepository {
     override suspend fun getRecurringTasks(): List<TaskEntity> = taskList.filter { it.repeatType != "ONCE" }
     override suspend fun addTask(task: TaskEntity): Long = 1L
     override suspend fun updateTask(task: TaskEntity) {}
+    override suspend fun updateTasks(tasks: List<TaskEntity>) {}
     override suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean) {}
     override suspend fun deleteTask(id: Long) {}
 }

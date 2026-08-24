@@ -51,6 +51,10 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.updateTask(task)
     }
 
+    override suspend fun updateTasks(tasks: List<TaskEntity>) = withContext(Dispatchers.IO) {
+        taskDao.updateTasks(tasks)
+    }
+
     override suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean) = withContext(Dispatchers.IO) {
         taskDao.setTaskCompleted(id, isCompleted)
     }

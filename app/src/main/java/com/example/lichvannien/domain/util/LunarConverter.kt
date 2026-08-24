@@ -120,10 +120,6 @@ object LunarConverter {
         return i - 1
     }
 
-    fun getLeapMonthOffsetForYear(year: Int): Int {
-        return getLeapMonthOffset(getLunarMonth11(year))
-    }
-
     fun getCanChiDay(jd: Int): String {
         val canIndex = (jd + 9) % 10
         val chiIndex = (jd + 1) % 12

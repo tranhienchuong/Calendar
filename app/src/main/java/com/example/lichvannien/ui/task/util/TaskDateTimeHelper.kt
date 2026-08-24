@@ -132,38 +132,6 @@ object TaskDateTimeHelper {
     }
 
     /**
-     * Tính toán ngày tiếp theo cho công việc lặp lại dựa trên ngày hiện tại của task hoặc ngày hôm nay.
-     */
-    fun calculateNextOccurrenceDate(
-        currentDateStr: String?,
-        repeatType: String,
-        baseDate: LocalDate = LocalDate.now()
-    ): String {
-        val rule = TaskRepeatRule.fromCode(repeatType)
-        val currentLocalDate = parseDate(currentDateStr) ?: baseDate
-
-        // Đảm bảo điểm bắt đầu tính toán ít nhất là từ ngày hôm nay (nếu task bị quá hạn từ các ngày trước)
-        val anchorDate = if (currentLocalDate.isBefore(baseDate)) baseDate else currentLocalDate
-
-        val nextDate = when (rule) {
-            TaskRepeatRule.ONCE -> anchorDate
-            TaskRepeatRule.DAILY -> anchorDate.plusDays(1)
-            TaskRepeatRule.WEEKDAYS -> {
-                var next = anchorDate.plusDays(1)
-                while (next.dayOfWeek.value > 5) { // 6 = Saturday, 7 = Sunday
-                    next = next.plusDays(1)
-                }
-                next
-            }
-            TaskRepeatRule.WEEKLY -> anchorDate.plusWeeks(1)
-            TaskRepeatRule.MONTHLY -> anchorDate.plusMonths(1)
-            TaskRepeatRule.YEARLY -> anchorDate.plusYears(1)
-        }
-
-        return nextDate.format(dateFormatter)
-    }
-
-    /**
      * Tính toán ngày kích hoạt tiếp theo cho một task lặp lại trong quá khứ khi bước sang ngày mới (today).
      * Đảm bảo task lặp lại từ hôm qua hoặc các ngày trước sẽ tự động chuyển sang hôm nay (hoặc chu kỳ tiếp theo).
      */

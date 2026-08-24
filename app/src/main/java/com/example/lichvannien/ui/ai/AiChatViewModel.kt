@@ -183,7 +183,9 @@ Bạn là "Trợ lý AI Lịch Việt & Chuyên gia Phong Thủy Phương Đông
                 val responseBody = response.body()
                 if (responseBody != null) {
                     val accumulatedText = StringBuilder()
-                    
+                    var lastStateUpdateTime = 0L
+                    val throttleIntervalMs = 80L
+
                     withContext(ioDispatcher) {
                         val source = responseBody.source()
                         while (!source.exhausted()) {
@@ -198,19 +200,32 @@ Bạn là "Trợ lý AI Lịch Việt & Chuyên gia Phong Thủy Phương Đông
                                         val contentDelta = chunk.choices.firstOrNull()?.delta?.content
                                         if (!contentDelta.isNullOrEmpty()) {
                                             accumulatedText.append(contentDelta)
-                                            val currentText = accumulatedText.toString()
-                                            
-                                            _uiState.update { state ->
-                                                val updated = state.messages.map { m ->
-                                                    if (m.id == aiMsgId) m.copy(text = currentText) else m
+                                            val now = System.currentTimeMillis()
+                                            if (now - lastStateUpdateTime >= throttleIntervalMs) {
+                                                val currentText = accumulatedText.toString()
+                                                _uiState.update { state ->
+                                                    val updated = state.messages.map { m ->
+                                                        if (m.id == aiMsgId) m.copy(text = currentText) else m
+                                                    }
+                                                    state.copy(messages = updated, isTyping = false)
                                                 }
-                                                state.copy(messages = updated, isTyping = false)
+                                                lastStateUpdateTime = now
                                             }
                                         }
                                     } catch (e: Exception) {
                                         // Ignore malformed chunk
                                     }
                                 }
+                            }
+                        }
+
+                        val finalText = accumulatedText.toString()
+                        if (finalText.isNotBlank()) {
+                            _uiState.update { state ->
+                                val updated = state.messages.map { m ->
+                                    if (m.id == aiMsgId) m.copy(text = finalText) else m
+                                }
+                                state.copy(messages = updated, isTyping = false)
                             }
                         }
                     }

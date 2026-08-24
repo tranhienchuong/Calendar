@@ -13,6 +13,7 @@ interface TaskRepository {
     suspend fun getRecurringTasks(): List<TaskEntity>
     suspend fun addTask(task: TaskEntity): Long
     suspend fun updateTask(task: TaskEntity)
+    suspend fun updateTasks(tasks: List<TaskEntity>)
     suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean)
     suspend fun deleteTask(id: Long)
 }

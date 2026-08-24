@@ -39,6 +39,9 @@ interface TaskDao {
     @Update
     fun updateTask(task: TaskEntity)
 
+    @Update
+    fun updateTasks(tasks: List<TaskEntity>)
+
     @Query("UPDATE tasks SET isCompleted = :isCompleted WHERE id = :id")
     fun setTaskCompleted(id: Long, isCompleted: Boolean)
 

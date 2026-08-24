@@ -35,6 +35,7 @@ class TaskAlarmReceiver : BroadcastReceiver() {
         showTaskNotification(context, taskId, taskTitle, reminderType)
 
         // Tự động lên lịch lại nếu task có chu kỳ lặp lại
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val task = taskRepository.getTaskById(taskId)
@@ -45,6 +46,8 @@ class TaskAlarmReceiver : BroadcastReceiver() {
                 }
             } catch (_: Exception) {
                 // Xử lý an toàn khi receiver chạy
+            } finally {
+                pendingResult.finish()
             }
         }
     }

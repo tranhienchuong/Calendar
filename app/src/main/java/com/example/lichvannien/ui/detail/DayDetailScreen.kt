@@ -248,7 +248,6 @@ fun AuspiciousCard(detail: DayDetail, modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(LayoutHorizontalApi::class)
 @Composable
 fun HoursCard(detail: DayDetail, modifier: Modifier = Modifier) {
     ElevatedCard(
@@ -341,7 +340,3 @@ fun EventsCard(detail: DayDetail, modifier: Modifier = Modifier) {
         }
     }
 }
-
-// Layout annotation
-@RequiresOptIn(level = RequiresOptIn.Level.WARNING)
-annotation class LayoutHorizontalApi

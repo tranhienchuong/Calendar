@@ -141,6 +141,7 @@ class TaskViewModel @Inject constructor(
     fun refreshRecurringTasks(today: LocalDate = LocalDate.now()) {
         viewModelScope.launch {
             val recurringTasks = taskRepository.getRecurringTasks()
+            val tasksToUpdate = mutableListOf<TaskEntity>()
             for (task in recurringTasks) {
                 val taskDate = TaskDateTimeHelper.parseDate(task.date)
                 if (taskDate != null && taskDate.isBefore(today)) {
@@ -149,9 +150,12 @@ class TaskViewModel @Inject constructor(
                         date = nextDate,
                         isCompleted = false
                     )
-                    taskRepository.updateTask(refreshedTask)
+                    tasksToUpdate.add(refreshedTask)
                     reminderScheduler?.scheduleTaskReminder(refreshedTask)
                 }
+            }
+            if (tasksToUpdate.isNotEmpty()) {
+                taskRepository.updateTasks(tasksToUpdate)
             }
         }
     }

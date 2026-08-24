@@ -199,6 +199,11 @@ private class FakeTaskRepository : TaskRepository {
     override suspend fun updateTask(task: TaskEntity) {
         lastUpdatedTask = task
     }
+    override suspend fun updateTasks(tasks: List<TaskEntity>) {
+        if (tasks.isNotEmpty()) {
+            lastUpdatedTask = tasks.last()
+        }
+    }
     override suspend fun toggleTaskCompleted(id: Long, isCompleted: Boolean) {
         lastToggledId = id
         lastToggledCompleted = isCompleted
