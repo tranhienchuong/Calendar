@@ -3,12 +3,10 @@ package com.example.lichvannien.ui
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.lichvannien.data.local.datastore.UserPreferences
+import com.example.lichvannien.domain.usecase.SaveBirthdayUseCase
 import com.example.lichvannien.ui.onboarding.OnboardingScreen
 import com.example.lichvannien.ui.onboarding.OnboardingViewModel
-import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -19,8 +17,7 @@ class OnboardingScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val userPreferences = mockk<UserPreferences>(relaxed = true)
-    private val birthdayFlow = MutableStateFlow(Pair(0, 0))
+    private val saveBirthdayUseCase = mockk<SaveBirthdayUseCase>(relaxed = true)
 
     @Before
     fun setup() {
@@ -31,13 +28,11 @@ class OnboardingScreenTest {
         } catch (e: Exception) {
             // Bỏ qua nếu file không tồn tại
         }
-
-        every { userPreferences.birthdayFlow } returns birthdayFlow
     }
 
     @Test
     fun testOnboardingUiElements() {
-        val viewModel = OnboardingViewModel(userPreferences)
+        val viewModel = OnboardingViewModel(saveBirthdayUseCase)
 
         composeTestRule.setContent {
             OnboardingScreen(

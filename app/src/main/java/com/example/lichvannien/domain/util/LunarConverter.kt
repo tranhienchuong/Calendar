@@ -138,7 +138,12 @@ object LunarConverter {
         return "${CAN[canIndex]} ${CHI[chiIndex]}"
     }
 
+    private val solarToLunarCache = java.util.concurrent.ConcurrentHashMap<Int, LunarDate>(512)
+
     fun solarToLunar(solarYear: Int, solarMonth: Int, solarDay: Int): LunarDate {
+        val cacheKey = (solarYear shl 9) or (solarMonth shl 5) or solarDay
+        solarToLunarCache[cacheKey]?.let { return it }
+
         val dayNumber = jdFromSolarDate(solarYear, solarMonth, solarDay)
         val k = floor((dayNumber - 2415021.076998695) / 29.530588853).toInt()
         var monthStart = getNewMoonDay(k + 1)
@@ -179,7 +184,7 @@ object LunarConverter {
         val canChiMonth = getCanChiMonth(lunarYear, lunarMonth, isLeap)
         val canChiYear = getCanChiYear(lunarYear)
 
-        return LunarDate(
+        val lunarDate = LunarDate(
             year = lunarYear,
             month = lunarMonth,
             day = lunarDay,
@@ -188,6 +193,8 @@ object LunarConverter {
             canChiMonth = canChiMonth,
             canChiYear = canChiYear
         )
+        solarToLunarCache[cacheKey] = lunarDate
+        return lunarDate
     }
 
     fun lunarToSolar(lunarYear: Int, lunarMonth: Int, lunarDay: Int, isLeapMonth: Boolean): SolarDate {

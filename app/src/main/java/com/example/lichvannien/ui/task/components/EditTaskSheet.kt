@@ -152,7 +152,8 @@ fun EditTaskSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TaskPastelColor.entries.forEach { pastel ->
+                    val pastelColors = remember { TaskPastelColor.entries }
+                    pastelColors.forEach { pastel ->
                         val isSelected = selectedColor == pastel
                         val circleBg = if (isDark) pastel.darkBg else pastel.lightBg
                         val borderCol = if (isSelected) pastel.accentColor else (if (isDark) pastel.darkBorder else pastel.lightBorder)

@@ -24,17 +24,20 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.lichvannien.R
-import com.example.lichvannien.data.local.datastore.UserPreferences
 import com.example.lichvannien.domain.util.EasternFengShuiHelper
 import com.example.lichvannien.theme.AppHeaderBlue
 import com.example.lichvannien.theme.AppNavActiveBg
@@ -44,7 +47,6 @@ import com.example.lichvannien.ui.navigation.Screen
 import com.example.lichvannien.ui.search.SearchDialog
 import com.example.lichvannien.ui.task.TaskScreen
 import com.example.lichvannien.ui.today.TodayScreen
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -53,7 +55,7 @@ import java.time.LocalDate
 fun MainScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    userPreferences: UserPreferences? = null
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     var currentTab by rememberSaveable { mutableStateOf(Screen.Today.route) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -64,10 +66,9 @@ fun MainScreen(
     var showFengShuiInfoDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
 
-    val birthdayTriple by (userPreferences?.birthdayFlow ?: flowOf(Triple(0, 0, 0)))
-        .collectAsStateWithLifecycle(initialValue = Triple(0, 0, 0))
+    val birthday by mainViewModel.birthdayState.collectAsStateWithLifecycle()
 
-    val birthYear = if (birthdayTriple.third > 1900) birthdayTriple.third else 1995
+    val birthYear = if ((birthday?.year ?: 0) > 1900) birthday!!.year else 1995
     val zodiacInfo = remember(birthYear) {
         EasternFengShuiHelper.getZodiacInfo(birthYear)
     }
@@ -312,6 +313,34 @@ fun MainScreen(
                 }
             },
             bottomBar = {
+                val isDark = isSystemInDarkTheme()
+                val activeContentColor = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706)
+                val activePillBg = if (isDark) Color(0xFF2C2417) else Color(0xFFFEF3C7)
+                val inactiveContentColor = if (isDark) Color(0xFF9CA3AF) else Color(0xFF6B7280)
+
+                val tabs = listOf(
+                    NavTabItem(
+                        route = Screen.Today.route,
+                        label = stringResource(R.string.tab_today_label),
+                        icon = Icons.Default.CalendarToday
+                    ),
+                    NavTabItem(
+                        route = Screen.CalendarMonth.route,
+                        label = stringResource(R.string.tab_calendar_label),
+                        icon = Icons.Default.CalendarMonth
+                    ),
+                    NavTabItem(
+                        route = Screen.Task.route,
+                        label = stringResource(R.string.tab_task_label),
+                        icon = Icons.Default.CheckBox
+                    ),
+                    NavTabItem(
+                        route = Screen.AiChat.route,
+                        label = stringResource(R.string.tab_ai_label),
+                        icon = Icons.Default.Psychology
+                    )
+                )
+
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     shadowElevation = 8.dp
@@ -324,34 +353,14 @@ fun MainScreen(
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val tabs = listOf(
-                            NavTabItem(
-                                route = Screen.Today.route,
-                                label = stringResource(R.string.tab_today_label),
-                                icon = Icons.Default.CalendarToday
-                            ),
-                            NavTabItem(
-                                route = Screen.CalendarMonth.route,
-                                label = stringResource(R.string.tab_calendar_label),
-                                icon = Icons.Default.CalendarMonth
-                            ),
-                            NavTabItem(
-                                route = Screen.Task.route,
-                                label = stringResource(R.string.tab_task_label),
-                                icon = Icons.Default.CheckBox
-                            ),
-                            NavTabItem(
-                                route = Screen.AiChat.route,
-                                label = stringResource(R.string.tab_ai_label),
-                                icon = Icons.Default.Psychology
-                            )
-                        )
-
                         tabs.forEach { item ->
                             val isSelected = currentTab == item.route
                             CustomBottomNavItem(
                                 item = item,
                                 isSelected = isSelected,
+                                activeContentColor = activeContentColor,
+                                activePillBg = activePillBg,
+                                inactiveContentColor = inactiveContentColor,
                                 onClick = { currentTab = item.route },
                                 modifier = Modifier.weight(1f)
                             )
@@ -366,30 +375,67 @@ fun MainScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                Crossfade(
-                    targetState = currentTab,
-                    label = "MainTabCrossfade"
-                ) { tab ->
-                    when (tab) {
-                        Screen.Today.route -> {
-                            TodayScreen(
-                                onDayDetailClick = { year, month, day ->
-                                    navController.navigate(Screen.DayDetail.createRoute(year, month, day))
-                                }
-                            )
+                val visitedTabs = remember { mutableStateListOf(currentTab) }
+                LaunchedEffect(currentTab) {
+                    if (!visitedTabs.contains(currentTab)) {
+                        visitedTabs.add(currentTab)
+                    }
+                }
+
+                val onTodayDayDetailClick = remember(navController) {
+                    { year: Int, month: Int, day: Int ->
+                        navController.navigate(Screen.DayDetail.createRoute(year, month, day))
+                    }
+                }
+                val onCalendarDayClick = remember(navController) {
+                    { year: Int, month: Int, day: Int ->
+                        currentTab = Screen.CalendarMonth.route
+                        navController.navigate(Screen.DayDetail.createRoute(year, month, day))
+                    }
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (visitedTabs.contains(Screen.Today.route)) {
+                        val isTodayActive = currentTab == Screen.Today.route
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .tabKeepAlive(isTodayActive)
+                        ) {
+                            TodayScreen(onDayDetailClick = onTodayDayDetailClick)
                         }
-                        Screen.CalendarMonth.route, Screen.Calendar.route -> {
-                            CalendarScreen(
-                                onDayClick = { year, month, day ->
-                                    currentTab = Screen.CalendarMonth.route
-                                    navController.navigate(Screen.DayDetail.createRoute(year, month, day))
-                                }
-                            )
+                    }
+
+                    val isCalendarVisited = visitedTabs.contains(Screen.CalendarMonth.route) || visitedTabs.contains(Screen.Calendar.route)
+                    if (isCalendarVisited) {
+                        val isCalendarActive = currentTab == Screen.CalendarMonth.route || currentTab == Screen.Calendar.route
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .tabKeepAlive(isCalendarActive)
+                        ) {
+                            CalendarScreen(onDayClick = onCalendarDayClick)
                         }
-                        Screen.Task.route -> {
+                    }
+
+                    if (visitedTabs.contains(Screen.Task.route)) {
+                        val isTaskActive = currentTab == Screen.Task.route
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .tabKeepAlive(isTaskActive)
+                        ) {
                             TaskScreen()
                         }
-                        Screen.AiChat.route -> {
+                    }
+
+                    if (visitedTabs.contains(Screen.AiChat.route)) {
+                        val isAiActive = currentTab == Screen.AiChat.route
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .tabKeepAlive(isAiActive)
+                        ) {
                             AiChatScreen()
                         }
                     }
@@ -458,16 +504,14 @@ fun MainScreen(
     }
 
     // Change Birthday Dialog
-    if (showChangeBirthdayDialog && userPreferences != null) {
+    if (showChangeBirthdayDialog) {
         ChangeBirthdayDialog(
-            currentDay = if (birthdayTriple.first != 0) birthdayTriple.first else LocalDate.now().dayOfMonth,
-            currentMonth = if (birthdayTriple.second != 0) birthdayTriple.second else LocalDate.now().monthValue,
-            currentYear = if (birthdayTriple.third != 0) birthdayTriple.third else 1995,
+            currentDay = if ((birthday?.day ?: 0) in 1..31) birthday!!.day else LocalDate.now().dayOfMonth,
+            currentMonth = if ((birthday?.month ?: 0) in 1..12) birthday!!.month else LocalDate.now().monthValue,
+            currentYear = if ((birthday?.year ?: 0) > 1900) birthday!!.year else 1995,
             onDismiss = { showChangeBirthdayDialog = false },
             onSave = { day, month, year ->
-                coroutineScope.launch {
-                    userPreferences.saveBirthday(day, month, year)
-                }
+                mainViewModel.saveBirthday(day, month, year)
                 showChangeBirthdayDialog = false
             }
         )
@@ -685,14 +729,12 @@ private data class NavTabItem(
 private fun CustomBottomNavItem(
     item: NavTabItem,
     isSelected: Boolean,
+    activeContentColor: Color,
+    activePillBg: Color,
+    inactiveContentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
-    val activeContentColor = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706)
-    val activePillBg = if (isDark) Color(0xFF2C2417) else Color(0xFFFEF3C7)
-    val inactiveContentColor = if (isDark) Color(0xFF9CA3AF) else Color(0xFF6B7280)
-
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -754,4 +796,18 @@ private fun CustomBottomNavItem(
             }
         }
     }
+}
+
+private fun Modifier.tabKeepAlive(isActive: Boolean): Modifier {
+    return this
+        .alpha(if (isActive) 1f else 0f)
+        .layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            layout(placeable.width, placeable.height) {
+                if (isActive) {
+                    placeable.place(0, 0)
+                }
+            }
+        }
+        .then(if (!isActive) Modifier.clearAndSetSemantics { } else Modifier)
 }

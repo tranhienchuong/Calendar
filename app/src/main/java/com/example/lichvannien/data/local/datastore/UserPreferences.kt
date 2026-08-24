@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import com.example.lichvannien.domain.model.UserBirthday
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -19,7 +20,7 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
         val KEY_BIRTH_YEAR = intPreferencesKey("birth_year")
     }
 
-    val birthdayFlow: Flow<Triple<Int, Int, Int>> = dataStore.data
+    val birthdayFlow: Flow<UserBirthday> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -31,7 +32,7 @@ class UserPreferences(private val dataStore: DataStore<Preferences>) {
             val day = preferences[KEY_BIRTH_DAY] ?: 0
             val month = preferences[KEY_BIRTH_MONTH] ?: 0
             val year = preferences[KEY_BIRTH_YEAR] ?: 0
-            Triple(day, month, year)
+            UserBirthday(day = day, month = month, year = year)
         }
         .distinctUntilChanged()
 

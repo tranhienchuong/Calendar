@@ -1,8 +1,9 @@
 package com.example.lichvannien.ui.ai
 
-import com.example.lichvannien.data.local.datastore.UserPreferences
 import com.example.lichvannien.data.remote.api.DeepSeekApi
+import com.example.lichvannien.domain.model.UserBirthday
 import com.example.lichvannien.domain.repository.TaskRepository
+import com.example.lichvannien.domain.usecase.GetBirthdayUseCase
 import com.example.lichvannien.domain.util.AuspiciousCalculator
 import com.example.lichvannien.domain.util.LunarConverter
 import com.google.common.truth.Truth.assertThat
@@ -30,7 +31,7 @@ class AiChatViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val deepSeekApi: DeepSeekApi = mockk()
-    private val userPreferences: UserPreferences = mockk()
+    private val getBirthdayUseCase: GetBirthdayUseCase = mockk()
     private val taskRepository: TaskRepository = mockk(relaxed = true)
     private val lunarConverter = LunarConverter
     private val auspiciousCalculator = AuspiciousCalculator
@@ -41,7 +42,7 @@ class AiChatViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        every { userPreferences.birthdayFlow } returns flowOf(Triple(15, 8, 1995))
+        every { getBirthdayUseCase() } returns flowOf(UserBirthday(day = 15, month = 8, year = 1995))
     }
 
     @After
@@ -62,7 +63,7 @@ class AiChatViewModelTest {
 
         viewModel = AiChatViewModel(
             deepSeekApi = deepSeekApi,
-            userPreferences = userPreferences,
+            getBirthdayUseCase = getBirthdayUseCase,
             lunarConverter = lunarConverter,
             auspiciousCalculator = auspiciousCalculator,
             taskRepository = taskRepository,

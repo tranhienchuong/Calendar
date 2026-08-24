@@ -8,23 +8,26 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.lichvannien.data.local.datastore.UserPreferences
 import com.example.lichvannien.ui.MainScreen
+import com.example.lichvannien.ui.MainViewModel
 import com.example.lichvannien.ui.detail.DayDetailScreen
 import com.example.lichvannien.ui.navigation.Screen
 import com.example.lichvannien.ui.onboarding.OnboardingScreen
 
 @Composable
-fun MainNavigation(userPreferences: UserPreferences) {
+fun MainNavigation(
+    mainViewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     
-    // Lắng nghe ngày sinh từ DataStore
-    val birthdayState by userPreferences.birthdayFlow.collectAsStateWithLifecycle(initialValue = null)
+    // Lắng nghe ngày sinh từ ViewModel
+    val birthdayState by mainViewModel.birthdayState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
         val state = birthdayState
@@ -32,7 +35,7 @@ fun MainNavigation(userPreferences: UserPreferences) {
             // Màn hình Splash/Loading tối giản để tránh nhấp nháy màn hình
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
-            val hasCompletedOnboarding = state.first != 0 && state.second != 0
+            val hasCompletedOnboarding = state.isConfigured
             val startDestination = if (hasCompletedOnboarding) Screen.Calendar.route else Screen.Onboarding.route
 
             NavHost(
@@ -52,7 +55,7 @@ fun MainNavigation(userPreferences: UserPreferences) {
                 composable(Screen.Calendar.route) {
                     MainScreen(
                         navController = navController,
-                        userPreferences = userPreferences
+                        mainViewModel = mainViewModel
                     )
                 }
 

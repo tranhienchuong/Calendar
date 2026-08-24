@@ -2,8 +2,8 @@ package com.example.lichvannien.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lichvannien.data.local.datastore.UserPreferences
 import com.example.lichvannien.domain.model.EasternZodiacInfo
+import com.example.lichvannien.domain.usecase.SaveBirthdayUseCase
 import com.example.lichvannien.domain.util.EasternFengShuiHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val userPreferences: UserPreferences
+    private val saveBirthdayUseCase: SaveBirthdayUseCase
 ) : ViewModel() {
 
     private val _selectedDay = MutableStateFlow(LocalDate.now().dayOfMonth)
@@ -46,7 +46,7 @@ class OnboardingViewModel @Inject constructor(
         val year = _selectedYear.value
 
         viewModelScope.launch {
-            userPreferences.saveBirthday(day, month, year)
+            saveBirthdayUseCase(day, month, year)
             _isOnboardingCompleted.value = true
         }
     }

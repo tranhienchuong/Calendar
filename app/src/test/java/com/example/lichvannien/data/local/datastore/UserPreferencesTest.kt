@@ -49,17 +49,19 @@ class UserPreferencesTest {
     @Test
     fun testDefaultBirthdayIsZero() = runTest(testDispatcher) {
         val birthday = userPreferences.birthdayFlow.first()
-        assertThat(birthday.first).isEqualTo(0)
-        assertThat(birthday.second).isEqualTo(0)
-        assertThat(birthday.third).isEqualTo(0)
+        assertThat(birthday.day).isEqualTo(0)
+        assertThat(birthday.month).isEqualTo(0)
+        assertThat(birthday.year).isEqualTo(0)
+        assertThat(birthday.isConfigured).isFalse()
     }
 
     @Test
     fun testSaveAndGetBirthday() = runTest(testDispatcher) {
         userPreferences.saveBirthday(15, 8, 1995)
         val birthday = userPreferences.birthdayFlow.first()
-        assertThat(birthday.first).isEqualTo(15)
-        assertThat(birthday.second).isEqualTo(8)
-        assertThat(birthday.third).isEqualTo(1995)
+        assertThat(birthday.day).isEqualTo(15)
+        assertThat(birthday.month).isEqualTo(8)
+        assertThat(birthday.year).isEqualTo(1995)
+        assertThat(birthday.isConfigured).isTrue()
     }
 }

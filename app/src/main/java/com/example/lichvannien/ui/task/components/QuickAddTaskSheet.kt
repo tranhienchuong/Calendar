@@ -33,6 +33,8 @@ import com.example.lichvannien.theme.AppHeaderBlue
 import com.example.lichvannien.ui.task.model.TaskPastelColor
 import com.example.lichvannien.ui.task.util.TaskDateTimeHelper
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -65,9 +67,15 @@ fun QuickAddTaskSheet(
     var showReminderPicker by remember { mutableStateOf(false) }
     var showColorPalette by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        delay(150)
-        focusRequester.requestFocus()
+    // Wait until sheet is fully settled in expanded state before focusing keyboard
+    LaunchedEffect(sheetState) {
+        snapshotFlow { sheetState.currentValue }
+            .filter { it == SheetValue.Expanded }
+            .first()
+        delay(60)
+        try {
+            focusRequester.requestFocus()
+        } catch (_: Exception) {}
     }
 
     fun submitCurrentTask() {
@@ -177,7 +185,7 @@ fun QuickAddTaskSheet(
             }
 
             // Bảng chọn màu sắc Pastel
-            AnimatedVisibility(visible = showColorPalette) {
+            if (showColorPalette) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -185,7 +193,8 @@ fun QuickAddTaskSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TaskPastelColor.entries.forEach { pastel ->
+                    val pastelColors = remember { TaskPastelColor.entries }
+                    pastelColors.forEach { pastel ->
                         val isSelected = selectedColor == pastel
                         val circleBg = if (isDark) pastel.darkBg else pastel.lightBg
                         val borderCol = if (isSelected) pastel.accentColor else (if (isDark) pastel.darkBorder else pastel.lightBorder)

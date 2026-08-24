@@ -2,12 +2,12 @@ package com.example.lichvannien.ui.ai
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lichvannien.data.local.datastore.UserPreferences
 import com.example.lichvannien.data.remote.api.DeepSeekApi
 import com.example.lichvannien.data.remote.dto.DeepSeekChatRequest
 import com.example.lichvannien.data.remote.dto.DeepSeekMessage
 import com.example.lichvannien.data.remote.dto.DeepSeekStreamChunk
 import com.example.lichvannien.domain.repository.TaskRepository
+import com.example.lichvannien.domain.usecase.GetBirthdayUseCase
 import com.example.lichvannien.domain.util.AuspiciousCalculator
 import com.example.lichvannien.domain.util.EasternFengShuiHelper
 import com.example.lichvannien.domain.util.LunarConverter
@@ -46,7 +46,7 @@ data class AiChatUiState(
 @HiltViewModel
 class AiChatViewModel @Inject constructor(
     private val deepSeekApi: DeepSeekApi,
-    private val userPreferences: UserPreferences,
+    private val getBirthdayUseCase: GetBirthdayUseCase,
     private val lunarConverter: LunarConverter,
     private val auspiciousCalculator: AuspiciousCalculator,
     private val taskRepository: TaskRepository,
@@ -98,10 +98,10 @@ class AiChatViewModel @Inject constructor(
         val lunar = lunarConverter.solarToLunar(today.year, today.monthValue, today.dayOfMonth)
         val auspicious = auspiciousCalculator.calculate(lunar)
 
-        val birthday = userPreferences.birthdayFlow.firstOrNull()
-        val birthDay = birthday?.first ?: 0
-        val birthMonth = birthday?.second ?: 0
-        val birthYear = if (birthday != null && birthday.third > 1900) birthday.third else 1995
+        val birthday = getBirthdayUseCase().firstOrNull()
+        val birthDay = birthday?.day ?: 0
+        val birthMonth = birthday?.month ?: 0
+        val birthYear = if (birthday != null && birthday.year > 1900) birthday.year else 1995
         val zodiacInfo = EasternFengShuiHelper.getZodiacInfo(birthYear)
 
         val gioHoangDaoStr = if (auspicious.gioHoangDao.isNotEmpty()) {

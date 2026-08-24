@@ -132,6 +132,13 @@ fun CalendarScreen(
             )
 
             // 3. Grid HorizontalPager (Month table)
+            val handleDayClick = remember(viewModel, onDayClick) {
+                { y: Int, m: Int, d: Int ->
+                    viewModel.selectDate(LocalDate.of(y, m, d))
+                    onDayClick(y, m, d)
+                }
+            }
+
             HorizontalPager(
                 state = pagerState,
                 beyondViewportPageCount = 1,
@@ -144,10 +151,7 @@ fun CalendarScreen(
                     uiState = uiState,
                     viewModel = viewModel,
                     selectedDate = uiState.selectedDate,
-                    onDayClick = { y, m, d ->
-                        viewModel.selectDate(LocalDate.of(y, m, d))
-                        onDayClick(y, m, d)
-                    },
+                    onDayClick = handleDayClick,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -238,22 +242,27 @@ fun CalendarHeader(
 fun WeekdaysHeader(
     modifier: Modifier = Modifier
 ) {
-    val weekdays = listOf(
-        R.string.day_mon to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
-        R.string.day_tue to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
-        R.string.day_wed to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
-        R.string.day_thu to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
-        R.string.day_fri to (MaterialTheme.colorScheme.onSurface to FontWeight.Bold),
-        R.string.day_sat to (Color(0xFF8B0000) to FontWeight.Bold),
-        R.string.day_sun to (Color(0xFFC62828) to FontWeight.Bold)
-    )
+    val weekdays = remember {
+        listOf(
+            R.string.day_mon to (Color.Unspecified to FontWeight.Bold),
+            R.string.day_tue to (Color.Unspecified to FontWeight.Bold),
+            R.string.day_wed to (Color.Unspecified to FontWeight.Bold),
+            R.string.day_thu to (Color.Unspecified to FontWeight.Bold),
+            R.string.day_fri to (Color.Unspecified to FontWeight.Bold),
+            R.string.day_sat to (Color(0xFF8B0000) to FontWeight.Bold),
+            R.string.day_sun to (Color(0xFFC62828) to FontWeight.Bold)
+        )
+    }
+    val defaultTextColor = MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
     ) {
         weekdays.forEach { (weekdayId, style) ->
-            val (color, fontWeight) = style
+            val (customColor, fontWeight) = style
+            val color = if (customColor == Color.Unspecified) defaultTextColor else customColor
             Text(
                 text = stringResource(weekdayId),
                 modifier = Modifier.weight(1f),
@@ -276,7 +285,13 @@ fun MonthPage(
     modifier: Modifier = Modifier
 ) {
     val pageMonth = remember(page) { yearMonthFromPage(page) }
-    val days = uiState.monthDataMap[pageMonth] ?: viewModel.getMonthDays(pageMonth) ?: persistentListOf()
+    val days = uiState.monthDataMap[pageMonth] ?: persistentListOf()
+
+    LaunchedEffect(pageMonth) {
+        if (!uiState.monthDataMap.containsKey(pageMonth)) {
+            viewModel.getMonthDays(pageMonth)
+        }
+    }
 
     CalendarGrid(
         days = days,
@@ -294,6 +309,9 @@ fun CalendarGrid(
     modifier: Modifier = Modifier
 ) {
     val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val isDark = isSystemInDarkTheme()
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
@@ -319,6 +337,9 @@ fun CalendarGrid(
                             DayCell(
                                 day = day,
                                 isSelected = isSelected,
+                                isDark = isDark,
+                                onSurfaceColor = onSurfaceColor,
+                                onSurfaceVariantColor = onSurfaceVariantColor,
                                 borderColor = borderColor,
                                 onDayClick = onDayClick,
                                 modifier = Modifier.weight(1f)
@@ -342,6 +363,9 @@ fun CalendarGrid(
 fun DayCell(
     day: CalendarDayUiModel,
     isSelected: Boolean,
+    isDark: Boolean,
+    onSurfaceColor: Color,
+    onSurfaceVariantColor: Color,
     borderColor: Color,
     onDayClick: (year: Int, month: Int, day: Int) -> Unit,
     modifier: Modifier = Modifier
@@ -364,11 +388,10 @@ fun DayCell(
         return
     }
 
-    val isDark = isSystemInDarkTheme()
     val solarDayColor = when {
         day.isSunday -> Color(0xFFC62828)
         day.isSaturday -> Color(0xFF8B0000)
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> onSurfaceColor
     }
 
     Column(
@@ -451,7 +474,7 @@ fun DayCell(
                 val hasSubLabel = day.lunarSubLabel != null
                 Text(
                     text = day.lunarDayText,
-                    color = if (hasSubLabel) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (hasSubLabel) Color(0xFFDC2626) else onSurfaceVariantColor,
                     fontSize = 9.sp,
                     textAlign = TextAlign.Center,
                     fontWeight = if (hasSubLabel) FontWeight.SemiBold else FontWeight.Normal
