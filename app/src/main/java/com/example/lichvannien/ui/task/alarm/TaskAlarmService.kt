@@ -225,7 +225,7 @@ class TaskAlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, TaskReminderScheduler.CHANNEL_ALARM_ID)
+        return NotificationCompat.Builder(this, TaskReminderScheduler.CHANNEL_ALARM_SERVICE_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("⏰ BÁO THỨC CÔNG VIỆC")
             .setContentText(taskTitle)

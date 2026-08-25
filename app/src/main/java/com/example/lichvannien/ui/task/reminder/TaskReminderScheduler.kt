@@ -28,6 +28,8 @@ class TaskReminderScheduler @Inject constructor(
         const val CHANNEL_REMINDER_NAME = "Lời nhắc công việc"
         const val CHANNEL_ALARM_ID = "channel_task_alarm_v2"
         const val CHANNEL_ALARM_NAME = "Báo thức công việc"
+        const val CHANNEL_ALARM_SERVICE_ID = "channel_task_alarm_service_v2"
+        const val CHANNEL_ALARM_SERVICE_NAME = "Dịch vụ chuông báo thức"
 
         const val EXTRA_TASK_ID = "extra_task_id"
         const val EXTRA_TASK_TITLE = "extra_task_title"
@@ -46,6 +48,7 @@ class TaskReminderScheduler @Inject constructor(
             try {
                 notificationManager.deleteNotificationChannel("channel_task_reminder")
                 notificationManager.deleteNotificationChannel("channel_task_alarm")
+                notificationManager.deleteNotificationChannel("channel_task_alarm_service")
             } catch (_: Exception) {}
 
             val notifSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -54,7 +57,7 @@ class TaskReminderScheduler @Inject constructor(
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build()
 
-            // Kênh thông báo thông thường
+            // 1. Kênh thông báo thông thường (NOTIFICATION)
             val reminderChannel = NotificationChannel(
                 CHANNEL_REMINDER_ID,
                 CHANNEL_REMINDER_NAME,
@@ -74,7 +77,7 @@ class TaskReminderScheduler @Inject constructor(
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .build()
 
-            // Kênh thông báo báo thức
+            // 2. Kênh thông báo báo thức (ALARM)
             val alarmChannel = NotificationChannel(
                 CHANNEL_ALARM_ID,
                 CHANNEL_ALARM_NAME,
@@ -88,8 +91,22 @@ class TaskReminderScheduler @Inject constructor(
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
+            // 3. Kênh im lặng cho Foreground Service báo thức (để MediaPlayer độc quyền phát chuông không bị trộn âm thanh)
+            val alarmServiceChannel = NotificationChannel(
+                CHANNEL_ALARM_SERVICE_ID,
+                CHANNEL_ALARM_SERVICE_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Kênh hiển thị trạng thái đang reo chuông báo thức"
+                enableVibration(false)
+                setSound(null, null)
+                setBypassDnd(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+            }
+
             notificationManager.createNotificationChannel(reminderChannel)
             notificationManager.createNotificationChannel(alarmChannel)
+            notificationManager.createNotificationChannel(alarmServiceChannel)
         }
     }
 
