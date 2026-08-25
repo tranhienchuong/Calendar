@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.lichvannien.MainActivity
@@ -14,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -26,27 +28,50 @@ class TaskAlarmReceiver : BroadcastReceiver() {
     lateinit var reminderScheduler: TaskReminderScheduler
 
     override fun onReceive(context: Context, intent: Intent) {
+        // Đảm bảo CPU hoạt động và đánh thức thiết bị khi có báo thức/thông báo
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val wakeLock = powerManager?.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "LichVanNien:TaskAlarmReceiver"
+        )
+        wakeLock?.acquire(15 * 1000L)
+
         val taskId = intent.getLongExtra(TaskReminderScheduler.EXTRA_TASK_ID, -1L)
         val taskTitle = intent.getStringExtra(TaskReminderScheduler.EXTRA_TASK_TITLE) ?: "Nhắc nhở công việc"
         val reminderType = intent.getStringExtra(TaskReminderScheduler.EXTRA_REMINDER_TYPE) ?: "NOTIFICATION"
 
-        if (taskId == -1L) return
+        if (taskId == -1L) {
+            try {
+                if (wakeLock?.isHeld == true) wakeLock.release()
+            } catch (_: Exception) {}
+            return
+        }
 
         showTaskNotification(context, taskId, taskTitle, reminderType)
 
-        // Tự động lên lịch lại nếu task có chu kỳ lặp lại
+        // Tự động cập nhật ngày tiếp theo và lên lịch lại nếu task có chu kỳ lặp lại
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val task = taskRepository.getTaskById(taskId)
                 if (task != null && !task.isCompleted) {
                     if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
-                        reminderScheduler.scheduleTaskReminder(task)
+                        val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextActiveDate(
+                            task.date,
+                            task.repeatType,
+                            LocalDate.now().plusDays(1)
+                        )
+                        val updatedTask = task.copy(date = nextDate)
+                        taskRepository.updateTask(updatedTask)
+                        reminderScheduler.scheduleTaskReminder(updatedTask)
                     }
                 }
             } catch (_: Exception) {
                 // Xử lý an toàn khi receiver chạy
             } finally {
+                try {
+                    if (wakeLock?.isHeld == true) wakeLock.release()
+                } catch (_: Exception) {}
                 pendingResult.finish()
             }
         }
@@ -85,14 +110,19 @@ class TaskAlarmReceiver : BroadcastReceiver() {
 
         val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("⏰ Lời nhắc việc cần làm")
+            .setContentTitle(if (isAlarm) "⏰ BÁO THỨC CÔNG VIỆC" else "📌 Lời nhắc công việc")
             .setContentText(taskTitle)
             .setPriority(if (isAlarm) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_HIGH)
             .setCategory(if (isAlarm) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setSound(soundUri)
-            .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setVibrate(if (isAlarm) longArrayOf(0, 500, 200, 500, 200, 1000) else longArrayOf(0, 300, 200, 300))
+
+        if (isAlarm) {
+            notificationBuilder.setFullScreenIntent(pendingIntent, true)
+        }
 
         try {
             val notificationManager = NotificationManagerCompat.from(context)

@@ -183,4 +183,75 @@ object TaskDateTimeHelper {
 
         return nextDate.format(dateFormatter)
     }
+
+    /**
+     * Tính toán thời điểm kích hoạt báo thức tiếp theo (ngày + giờ) trong tương lai.
+     * Trả về null nếu task là ONCE và đã quá hạn.
+     */
+    fun calculateNextTriggerDateTime(
+        taskDate: LocalDate,
+        taskTime: LocalTime,
+        repeatType: String,
+        now: LocalDateTime = LocalDateTime.now()
+    ): LocalDateTime? {
+        val rule = TaskRepeatRule.fromCode(repeatType)
+        var triggerDateTime = LocalDateTime.of(taskDate, taskTime)
+
+        if (rule == TaskRepeatRule.ONCE) {
+            return if (triggerDateTime.isBefore(now)) null else triggerDateTime
+        }
+
+        if (rule == TaskRepeatRule.WEEKDAYS) {
+            while (triggerDateTime.dayOfWeek.value > 5) {
+                triggerDateTime = triggerDateTime.plusDays(1)
+            }
+        }
+
+        if (!triggerDateTime.isBefore(now)) {
+            return triggerDateTime
+        }
+
+        return when (rule) {
+            TaskRepeatRule.ONCE -> null
+            TaskRepeatRule.DAILY -> {
+                var dt = LocalDateTime.of(now.toLocalDate(), taskTime)
+                if (!dt.isAfter(now)) {
+                    dt = dt.plusDays(1)
+                }
+                dt
+            }
+            TaskRepeatRule.WEEKDAYS -> {
+                var dt = LocalDateTime.of(now.toLocalDate(), taskTime)
+                if (!dt.isAfter(now)) {
+                    dt = dt.plusDays(1)
+                }
+                while (dt.dayOfWeek.value > 5) {
+                    dt = dt.plusDays(1)
+                }
+                dt
+            }
+            TaskRepeatRule.WEEKLY -> {
+                val targetDayOfWeek = taskDate.dayOfWeek
+                var dt = LocalDateTime.of(now.toLocalDate(), taskTime)
+                while (dt.dayOfWeek != targetDayOfWeek || !dt.isAfter(now)) {
+                    dt = dt.plusDays(1)
+                }
+                dt
+            }
+            TaskRepeatRule.MONTHLY -> {
+                var dt = triggerDateTime
+                while (!dt.isAfter(now)) {
+                    dt = dt.plusMonths(1)
+                }
+                dt
+            }
+            TaskRepeatRule.YEARLY -> {
+                var dt = triggerDateTime
+                while (!dt.isAfter(now)) {
+                    dt = dt.plusYears(1)
+                }
+                dt
+            }
+        }
+    }
 }

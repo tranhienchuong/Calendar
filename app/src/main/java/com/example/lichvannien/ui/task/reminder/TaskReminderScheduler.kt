@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import com.example.lichvannien.domain.model.Task
@@ -22,9 +24,9 @@ class TaskReminderScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
     companion object {
-        const val CHANNEL_REMINDER_ID = "channel_task_reminder"
+        const val CHANNEL_REMINDER_ID = "channel_task_reminder_v2"
         const val CHANNEL_REMINDER_NAME = "Lời nhắc công việc"
-        const val CHANNEL_ALARM_ID = "channel_task_alarm"
+        const val CHANNEL_ALARM_ID = "channel_task_alarm_v2"
         const val CHANNEL_ALARM_NAME = "Báo thức công việc"
 
         const val EXTRA_TASK_ID = "extra_task_id"
@@ -40,6 +42,18 @@ class TaskReminderScheduler @Inject constructor(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+            // Xóa các kênh cũ nếu có để áp dụng cấu hình âm thanh mới
+            try {
+                notificationManager.deleteNotificationChannel("channel_task_reminder")
+                notificationManager.deleteNotificationChannel("channel_task_alarm")
+            } catch (_: Exception) {}
+
+            val notifSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val notifAudioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+
             // Kênh thông báo thông thường
             val reminderChannel = NotificationChannel(
                 CHANNEL_REMINDER_ID,
@@ -48,16 +62,30 @@ class TaskReminderScheduler @Inject constructor(
             ).apply {
                 description = "Kênh gửi thông báo nhắc nhở việc cần làm"
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 400, 200, 400)
+                setSound(notifSoundUri, notifAudioAttributes)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
+
+            val alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val alarmAudioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build()
 
             // Kênh thông báo báo thức
             val alarmChannel = NotificationChannel(
                 CHANNEL_ALARM_ID,
                 CHANNEL_ALARM_NAME,
-                NotificationManager.IMPORTANCE_MAX
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Kênh chuông báo thức toàn màn hình cho công việc"
+                description = "Kênh chuông báo thức cho công việc"
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 800, 400, 800, 400, 1200)
+                setSound(alarmSoundUri, alarmAudioAttributes)
+                setBypassDnd(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
             notificationManager.createNotificationChannel(reminderChannel)
@@ -66,25 +94,23 @@ class TaskReminderScheduler @Inject constructor(
     }
 
     fun scheduleTaskReminder(task: Task) {
-        if (task.isCompleted) {
+        if (task.isCompleted && task.repeatType.equals("ONCE", ignoreCase = true)) {
             cancelTaskReminder(task.id)
             return
         }
 
         val taskDate = TaskDateTimeHelper.parseDate(task.date) ?: LocalDate.now()
         val taskTime = TaskDateTimeHelper.parseTime(task.dueTime ?: task.startTime) ?: return
-
-        var triggerDateTime = LocalDateTime.of(taskDate, taskTime)
         val now = LocalDateTime.now()
 
-        // Nếu thời gian đã qua đối với nhắc nhở lặp lại hàng ngày, dời sang ngày tiếp theo
-        if (triggerDateTime.isBefore(now)) {
-            if (task.repeatType.equals("DAILY", ignoreCase = true)) {
-                triggerDateTime = triggerDateTime.plusDays(1)
-            } else {
-                // Không lên lịch nếu là ONCE và đã quá hạn
-                return
-            }
+        val triggerDateTime = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = taskDate,
+            taskTime = taskTime,
+            repeatType = task.repeatType,
+            now = now
+        ) ?: run {
+            cancelTaskReminder(task.id)
+            return
         }
 
         val triggerMillis = triggerDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -102,29 +128,53 @@ class TaskReminderScheduler @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val showAppIntent = Intent(context, com.example.lichvannien.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val showPendingIntent = PendingIntent.getActivity(
+            context,
+            task.id.toInt(),
+            showAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerMillis,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerMillis,
-                    pendingIntent
-                )
+            // Sử dụng setAlarmClock: chuẩn Android cao nhất cho báo thức và lời nhắc,
+            // giúp đánh thức CPU, unfreeze ứng dụng trên mọi thiết bị (Vivo, Xiaomi, Samsung...) ngay cả khi tắt màn hình
+            val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerMillis, showPendingIntent)
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        } catch (_: Exception) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                }
+            } catch (_: Exception) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                }
             }
-        } catch (_: SecurityException) {
-            // Trường hợp thiếu quyền EXACT_ALARM trên Android 12+, dùng set thông thường
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                triggerMillis,
-                pendingIntent
-            )
         }
     }
 

@@ -69,6 +69,7 @@ class CalendarViewModel @Inject constructor(
     private val auspiciousCalculator: AuspiciousCalculator,
     private val specialDayRepository: SpecialDayRepository,
     private val taskRepository: TaskRepository? = null,
+    private val reminderScheduler: com.example.lichvannien.ui.task.reminder.TaskReminderScheduler? = null,
     @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
@@ -160,6 +161,14 @@ class CalendarViewModel @Inject constructor(
         val repo = taskRepository ?: return
         viewModelScope.launch {
             repo.toggleTaskCompleted(id, isCompleted)
+            val task = repo.getTaskById(id)
+            if (task != null) {
+                if (isCompleted && task.repeatType.equals("ONCE", ignoreCase = true)) {
+                    reminderScheduler?.cancelTaskReminder(id)
+                } else {
+                    reminderScheduler?.scheduleTaskReminder(task.copy(isCompleted = isCompleted))
+                }
+            }
         }
     }
 
@@ -167,18 +176,23 @@ class CalendarViewModel @Inject constructor(
         val repo = taskRepository ?: return
         val date = _uiState.value.selectedDate
         val dateStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+        val finalDueTime = startTime?.ifBlank { null }
         viewModelScope.launch {
             val task = Task(
                 title = title,
                 date = dateStr,
-                startTime = startTime?.ifBlank { null },
+                startTime = finalDueTime,
+                dueTime = finalDueTime,
                 endTime = endTime?.ifBlank { null },
                 location = location?.ifBlank { null },
                 isCompleted = false,
                 category = "WORK",
                 colorHex = 0xFF1976D2
             )
-            repo.addTask(task)
+            val generatedId = repo.addTask(task)
+            if (generatedId > 0) {
+                reminderScheduler?.scheduleTaskReminder(task.copy(id = generatedId))
+            }
         }
     }
 

@@ -110,23 +110,25 @@ class TodayViewModel @Inject constructor(
     fun toggleTask(id: Long, isCompleted: Boolean) {
         viewModelScope.launch {
             taskRepository.toggleTaskCompleted(id, isCompleted)
-            if (isCompleted) {
-                reminderScheduler?.cancelTaskReminder(id)
-            } else {
-                val task = taskRepository.getTaskById(id)
-                if (task != null) {
-                    reminderScheduler?.scheduleTaskReminder(task.copy(isCompleted = false))
+            val task = taskRepository.getTaskById(id)
+            if (task != null) {
+                if (isCompleted && task.repeatType.equals("ONCE", ignoreCase = true)) {
+                    reminderScheduler?.cancelTaskReminder(id)
+                } else {
+                    reminderScheduler?.scheduleTaskReminder(task.copy(isCompleted = isCompleted))
                 }
             }
         }
     }
 
     fun addNewTask(title: String, startTime: String?, endTime: String?, location: String?) {
+        val finalDueTime = startTime?.ifBlank { null }
         viewModelScope.launch {
             val task = Task(
                 title = title,
                 date = todayStr,
-                startTime = startTime?.ifBlank { null },
+                startTime = finalDueTime,
+                dueTime = finalDueTime,
                 endTime = endTime?.ifBlank { null },
                 location = location?.ifBlank { null },
                 isCompleted = false,

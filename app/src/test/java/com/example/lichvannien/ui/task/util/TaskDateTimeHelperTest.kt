@@ -113,4 +113,62 @@ class TaskDateTimeHelperTest {
         )
         assertThat(next).isEqualTo("2026-08-25")
     }
+
+    @Test
+    fun calculateNextTriggerDateTime_onceFuture_returnsSameDateTime() {
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "ONCE",
+            now = fixedNow // 10:00 AM on 2026-08-24
+        )
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 24, 14, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_oncePast_returnsNull() {
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(8, 0),
+            repeatType = "ONCE",
+            now = fixedNow // 10:00 AM on 2026-08-24
+        )
+        assertThat(next).isNull()
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_dailyPast_returnsTomorrow() {
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(8, 0),
+            repeatType = "DAILY",
+            now = fixedNow // 10:00 AM on 2026-08-24 (Monday)
+        )
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 25, 8, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_weekdaysFromFridayPast_returnsMonday() {
+        val fridayNow = LocalDateTime.of(2026, 8, 28, 17, 0) // Friday 17:00
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 28),
+            taskTime = java.time.LocalTime.of(9, 0),
+            repeatType = "WEEKDAYS",
+            now = fridayNow
+        )
+        // Saturday 29, Sunday 30 -> Next is Monday Aug 31
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 31, 9, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_weeklyPast_returnsNextWeek() {
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(8, 0),
+            repeatType = "WEEKLY",
+            now = fixedNow // Monday 10:00 AM
+        )
+        // Next Monday is Aug 31
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 31, 8, 0))
+    }
 }
