@@ -178,6 +178,69 @@ class TaskReminderScheduler @Inject constructor(
         }
     }
 
+    fun scheduleSnooze(taskId: Long, taskTitle: String, minutes: Int = 5) {
+        val triggerMillis = System.currentTimeMillis() + (minutes * 60 * 1000L)
+        val intent = Intent(context, TaskAlarmReceiver::class.java).apply {
+            putExtra(EXTRA_TASK_ID, taskId)
+            putExtra(EXTRA_TASK_TITLE, taskTitle)
+            putExtra(EXTRA_REMINDER_TYPE, "ALARM")
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            taskId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val showAppIntent = Intent(context, com.example.lichvannien.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val showPendingIntent = PendingIntent.getActivity(
+            context,
+            taskId.toInt(),
+            showAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        try {
+            val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerMillis, showPendingIntent)
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        } catch (_: Exception) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                }
+            } catch (_: Exception) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                }
+            }
+        }
+    }
+
     fun cancelTaskReminder(taskId: Long) {
         val intent = Intent(context, TaskAlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(

@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
+import com.example.lichvannien.ui.task.alarm.TaskAlarmActivity
+import com.example.lichvannien.ui.task.alarm.TaskAlarmService
+
 @AndroidEntryPoint
 class TaskAlarmReceiver : BroadcastReceiver() {
 
@@ -28,26 +31,45 @@ class TaskAlarmReceiver : BroadcastReceiver() {
     lateinit var reminderScheduler: TaskReminderScheduler
 
     override fun onReceive(context: Context, intent: Intent) {
-        // Đảm bảo CPU hoạt động và đánh thức thiết bị khi có báo thức/thông báo
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        val wakeLock = powerManager?.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "LichVanNien:TaskAlarmReceiver"
-        )
-        wakeLock?.acquire(15 * 1000L)
-
         val taskId = intent.getLongExtra(TaskReminderScheduler.EXTRA_TASK_ID, -1L)
         val taskTitle = intent.getStringExtra(TaskReminderScheduler.EXTRA_TASK_TITLE) ?: "Nhắc nhở công việc"
         val reminderType = intent.getStringExtra(TaskReminderScheduler.EXTRA_REMINDER_TYPE) ?: "NOTIFICATION"
 
-        if (taskId == -1L) {
+        if (taskId == -1L) return
+
+        val isAlarm = reminderType.equals("ALARM", ignoreCase = true)
+
+        if (isAlarm) {
+            // Đảm bảo CPU hoạt động và đánh thức thiết bị khi có báo thức
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            val wakeLock = powerManager?.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                "LichVanNien:TaskAlarmReceiver"
+            )
+            wakeLock?.acquire(15 * 1000L)
+
+            // 1. Khởi chạy Foreground Service phát chuông báo thức liên tục và rung
+            TaskAlarmService.startAlarm(context, taskId, taskTitle)
+
+            // 2. Mở màn hình TaskAlarmActivity toàn màn hình đè lên màn hình khóa
+            try {
+                val alarmIntent = Intent(context, TaskAlarmActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(TaskAlarmService.EXTRA_TASK_ID, taskId)
+                    putExtra(TaskAlarmService.EXTRA_TASK_TITLE, taskTitle)
+                }
+                context.startActivity(alarmIntent)
+            } catch (_: Exception) {}
+
             try {
                 if (wakeLock?.isHeld == true) wakeLock.release()
             } catch (_: Exception) {}
-            return
+        } else {
+            // Chế độ THÔNG BÁO thường: Giữ nguyên thiết kế ban đầu (chỉ gửi notification nhẹ nhàng lên thanh trạng thái)
+            showStandardNotification(context, taskId, taskTitle)
         }
-
-        showTaskNotification(context, taskId, taskTitle, reminderType)
 
         // Tự động cập nhật ngày tiếp theo và lên lịch lại nếu task có chu kỳ lặp lại
         val pendingResult = goAsync()
@@ -69,27 +91,16 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             } catch (_: Exception) {
                 // Xử lý an toàn khi receiver chạy
             } finally {
-                try {
-                    if (wakeLock?.isHeld == true) wakeLock.release()
-                } catch (_: Exception) {}
                 pendingResult.finish()
             }
         }
     }
 
-    private fun showTaskNotification(
+    private fun showStandardNotification(
         context: Context,
         taskId: Long,
-        taskTitle: String,
-        reminderType: String
+        taskTitle: String
     ) {
-        val isAlarm = reminderType.equals("ALARM", ignoreCase = true)
-        val channelId = if (isAlarm) {
-            TaskReminderScheduler.CHANNEL_ALARM_ID
-        } else {
-            TaskReminderScheduler.CHANNEL_REMINDER_ID
-        }
-
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -101,28 +112,19 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val soundUri = if (isAlarm) {
-            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        } else {
-            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        }
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-        val notificationBuilder = NotificationCompat.Builder(context, channelId)
+        val notificationBuilder = NotificationCompat.Builder(context, TaskReminderScheduler.CHANNEL_REMINDER_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(if (isAlarm) "⏰ BÁO THỨC CÔNG VIỆC" else "📌 Lời nhắc công việc")
+            .setContentTitle("📌 Lời nhắc công việc")
             .setContentText(taskTitle)
-            .setPriority(if (isAlarm) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_HIGH)
-            .setCategory(if (isAlarm) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setSound(soundUri)
-            .setVibrate(if (isAlarm) longArrayOf(0, 500, 200, 500, 200, 1000) else longArrayOf(0, 300, 200, 300))
-
-        if (isAlarm) {
-            notificationBuilder.setFullScreenIntent(pendingIntent, true)
-        }
+            .setVibrate(longArrayOf(0, 300, 200, 300))
 
         try {
             val notificationManager = NotificationManagerCompat.from(context)
