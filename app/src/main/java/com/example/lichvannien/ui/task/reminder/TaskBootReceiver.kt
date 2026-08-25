@@ -31,8 +31,8 @@ class TaskBootReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val allTasks = taskRepository.getAllTasks().firstOrNull() ?: emptyList()
-                    val uncompletedTasks = allTasks.filter { !it.isCompleted }
-                    for (task in uncompletedTasks) {
+                    val activeTasks = allTasks.filter { !it.isCompleted || !it.repeatType.equals("ONCE", ignoreCase = true) }
+                    for (task in activeTasks) {
                         reminderScheduler.scheduleTaskReminder(task)
                     }
                 } catch (_: Exception) {

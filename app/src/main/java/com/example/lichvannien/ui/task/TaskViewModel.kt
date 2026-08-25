@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -136,6 +137,7 @@ class TaskViewModel @Inject constructor(
 
     init {
         refreshRecurringTasks()
+        rescheduleAllActiveTasks()
     }
 
     fun refreshRecurringTasks(today: LocalDate = LocalDate.now()) {
@@ -156,6 +158,17 @@ class TaskViewModel @Inject constructor(
             }
             if (tasksToUpdate.isNotEmpty()) {
                 taskRepository.updateTasks(tasksToUpdate)
+            }
+        }
+    }
+
+    fun rescheduleAllActiveTasks() {
+        viewModelScope.launch {
+            val allTasks = taskRepository.getAllTasks().firstOrNull() ?: emptyList()
+            for (task in allTasks) {
+                if (!task.isCompleted || !task.repeatType.equals("ONCE", ignoreCase = true)) {
+                    reminderScheduler?.scheduleTaskReminder(task)
+                }
             }
         }
     }
