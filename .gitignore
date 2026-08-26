@@ -1,15 +1,53 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# Built application files & binaries
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Generated build files
+build/
+app/build/
 /build
-/captures
-.externalNativeBuild
-.cxx
+bin/
+gen/
+out/
+buildOutput/
+
+# Gradle files & caches
+.gradle/
+
+# Local configuration file (contains Android SDK path, DEEPSEEK_API_KEY, secrets)
 local.properties
+secrets.properties
+
+# Signing keys & certificates
+*.jks
+*.keystore
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# VS Code
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Android profiling / captures / C++ native
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Log files
+*.log
