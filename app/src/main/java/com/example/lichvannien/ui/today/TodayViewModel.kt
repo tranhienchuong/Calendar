@@ -89,14 +89,22 @@ class TodayViewModel @Inject constructor(
             val tasksToUpdate = mutableListOf<Task>()
             for (task in recurringTasks) {
                 val taskDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.parseDate(task.date)
-                if (taskDate != null && taskDate.isBefore(today)) {
-                    val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextActiveDate(task.date, task.repeatType, today)
-                    val refreshedTask = task.copy(
-                        date = nextDate,
-                        isCompleted = false
-                    )
-                    tasksToUpdate.add(refreshedTask)
-                    reminderScheduler?.scheduleTaskReminder(refreshedTask)
+                if (taskDate != null) {
+                    if (taskDate.isBefore(today)) {
+                        val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextActiveDate(task.date, task.repeatType, today)
+                        val refreshedTask = task.copy(
+                            date = nextDate,
+                            isCompleted = false
+                        )
+                        tasksToUpdate.add(refreshedTask)
+                        reminderScheduler?.scheduleTaskReminder(refreshedTask)
+                    } else if (taskDate.isAfter(today) && task.repeatType.equals("DAILY", ignoreCase = true)) {
+                        val restoredTask = task.copy(
+                            date = today.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        )
+                        tasksToUpdate.add(restoredTask)
+                        reminderScheduler?.scheduleTaskReminder(restoredTask)
+                    }
                 }
             }
             if (tasksToUpdate.isNotEmpty()) {

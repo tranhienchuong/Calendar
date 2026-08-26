@@ -146,14 +146,23 @@ class TaskViewModel @Inject constructor(
             val tasksToUpdate = mutableListOf<Task>()
             for (task in recurringTasks) {
                 val taskDate = TaskDateTimeHelper.parseDate(task.date)
-                if (taskDate != null && taskDate.isBefore(today)) {
-                    val nextDate = TaskDateTimeHelper.calculateNextActiveDate(task.date, task.repeatType, today)
-                    val refreshedTask = task.copy(
-                        date = nextDate,
-                        isCompleted = false
-                    )
-                    tasksToUpdate.add(refreshedTask)
-                    reminderScheduler?.scheduleTaskReminder(refreshedTask)
+                if (taskDate != null) {
+                    if (taskDate.isBefore(today)) {
+                        val nextDate = TaskDateTimeHelper.calculateNextActiveDate(task.date, task.repeatType, today)
+                        val refreshedTask = task.copy(
+                            date = nextDate,
+                            isCompleted = false
+                        )
+                        tasksToUpdate.add(refreshedTask)
+                        reminderScheduler?.scheduleTaskReminder(refreshedTask)
+                    } else if (taskDate.isAfter(today) && task.repeatType.equals("DAILY", ignoreCase = true)) {
+                        // Khôi phục các task DAILY bị đẩy sang ngày mai về đúng ngày hôm nay
+                        val restoredTask = task.copy(
+                            date = today.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        )
+                        tasksToUpdate.add(restoredTask)
+                        reminderScheduler?.scheduleTaskReminder(restoredTask)
+                    }
                 }
             }
             if (tasksToUpdate.isNotEmpty()) {

@@ -71,22 +71,15 @@ class TaskAlarmReceiver : BroadcastReceiver() {
             showStandardNotification(context, taskId, taskTitle)
         }
 
-        // Tự động cập nhật ngày tiếp theo và lên lịch lại nếu task có chu kỳ lặp lại
+        // Lên lịch cho chu kỳ tiếp theo nếu task có chu kỳ lặp lại (giữ nguyên ngày của task hôm nay trong DB)
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val task = taskRepository.getTaskById(taskId)
-                if (task != null && !task.isCompleted) {
-                    if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
-                        val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextActiveDate(
-                            task.date,
-                            task.repeatType,
-                            LocalDate.now().plusDays(1)
-                        )
-                        val updatedTask = task.copy(date = nextDate)
-                        taskRepository.updateTask(updatedTask)
-                        reminderScheduler.scheduleTaskReminder(updatedTask)
-                    }
+                if (task != null && !task.repeatType.equals("ONCE", ignoreCase = true)) {
+                    // scheduleTaskReminder tự động tính toán thời điểm reo tiếp theo (ví dụ: ngày mai) và nạp vào AlarmManager
+                    // mà KHÔNG làm thay đổi ngày của task trong Database để task hôm nay hiển thị đúng trạng thái Quá hạn
+                    reminderScheduler.scheduleTaskReminder(task)
                 }
             } catch (_: Exception) {
                 // Xử lý an toàn khi receiver chạy
