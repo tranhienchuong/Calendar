@@ -1,107 +1,138 @@
-# Lịch Vạn Niên & Tử Vi Hoàng Đạo 📅✨
+# Vietnamese Perpetual Calendar & Eastern Feng Shui (Lịch Vạn Niên) 📅✨
 
-[![Kotlin Version](https://img.shields.io/badge/kotlin-2.3.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
-[![Android Version](https://img.shields.io/badge/minSdk-24-green.svg?logo=android)](https://developer.android.com)
-[![Material Design](https://img.shields.io/badge/Material--3-M3-orange.svg?logo=materialdesign)](https://m3.material.io)
+[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.3.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Android Version](https://img.shields.io/badge/Android-minSdk%2024%20|%20compileSdk%2036-green.svg?logo=android)](https://developer.android.com)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-orange.svg?logo=jetpackcompose)](https://m3.material.io)
+[![Architecture](https://img.shields.io/badge/Architecture-Clean%20Architecture%20%2B%20MVVM-purple.svg)](https://developer.android.com/topic/architecture)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Ứng dụng **Lịch Vạn Niên & Tử Vi Hoàng Đạo** là giải pháp tra cứu lịch âm dương truyền thống kết hợp xem tử vi cung hoàng đạo cá nhân hóa. Được xây dựng trên nền tảng Kotlin Android hiện đại, tuân thủ nghiêm ngặt **Clean Architecture** và các nguyên lý của **Material 3 Design**.
+**Lịch Vạn Niên** (Perpetual Calendar & Eastern Feng Shui) is a modern Android application for Vietnamese Lunar-Solar calendar lookup, Eastern astrological Feng Shui insights, task scheduling with persistent alarm reminders, and an integrated AI Feng Shui Assistant powered by DeepSeek.
+
+Built with **Jetpack Compose**, **Kotlin Coroutines & Flow**, **Room**, **Hilt**, and strict adherence to **Clean Architecture** principles.
 
 ---
 
-## 🌟 Tính Năng Chính
+## 🌟 Key Features
 
-1. **Lịch Tháng Tra Cứu Âm Dương**:
-   - Chuyển đổi Âm - Dương lịch múi giờ GMT+7 chính xác theo thuật toán thiên văn của nhà khoa học Hồ Ngọc Đức.
-   - Hiển thị ngày Hoàng Đạo (cát), Hắc Đạo (hung), Trực của ngày và giờ hoàng đạo tương ứng.
-   - Đánh dấu các ngày lễ đặc biệt (âm lịch và dương lịch) bằng chấm tròn cam nổi bật.
-2. **Chi Tiết Ngày Cát Hung**:
-   - Tra cứu chi tiết Can Chi của ngày/tháng/năm hiện tại.
-   - Liệt kê danh sách các giờ hoàng đạo chi tiết trong ngày dưới dạng các chip bo góc.
-   - Thống kê các ngày lễ truyền thống hoặc sự kiện lịch sử xảy ra trong ngày.
-3. **Onboarding Cá Nhân Hóa & Cung Hoàng Đạo**:
-   - Lựa chọn ngày sinh bằng DatePicker trực quan để tự động phân tích và tính toán cung hoàng đạo của riêng bạn.
-   - Lưu trữ an toàn ngày sinh nội bộ bất đồng bộ thông qua **Jetpack DataStore**.
-4. **Tử Vi Hàng Ngày, Tuần, Tháng**:
-   - Nạp thông tin tử vi (Màu sắc, Con số may mắn, Giờ hoàng đạo, Tâm trạng, Cung hợp...) thông qua API `aztro`.
-   - Cơ chế **Room Caching 24 giờ** độc lập theo từng tab giúp tăng tốc độ tải và tiết kiệm dữ liệu mạng.
-   - Cơ chế tự động fallback thông minh sang dữ liệu offline từ assets JSON khi mất mạng.
+### 1. 📅 Dual Solar-Lunar Calendar (Lịch Âm Dương)
+- **High-Precision Astronomy Algorithm**: Exact solar-to-lunar conversions for the GMT+7 timezone based on the renowned astronomical algorithm by Dr. Ho Ngoc Duc.
+- **Monthly Overview**: Month grid view featuring lunar day markings, auspicious (Hoàng Đạo) and inauspicious (Hắc Đạo) indicators, major national holidays, and traditional solar terms (Tiết Khí).
+- **Interactive Gestures**: Smooth horizontal month swiping with predictive animations.
 
----
+### 2. 🔮 Eastern Feng Shui & Day Insights (Phong Thủy & Cát Hung)
+- **Can Chi Calculation**: Comprehensive computation of Heavenly Stems and Earthly Branches (Can Chi) for year, month, day, and hour.
+- **Auspicious Hours (Giờ Hoàng Đạo)**: Identifies favorable time blocks for conducting important tasks (departures, weddings, groundbreakings, etc.).
+- **12 Day Officers (Trực) & 28 Mansions (Nhị Thập Bát Tú)**: Deep traditional insights, conflict ages (Tuổi xung khắc), and auspicious departure directions (Hướng xuất hành).
 
-## 🛠️ Công Nghệ Sử Dụng
+### 3. 📝 Smart Task Management & Persistent Alarm Reminders
+- **Rich Task Organizer**: Organize tasks with pastel color palettes, priority levels, categories, and calendar date bindings.
+- **Exact Alarms & Notification Reminders**: Uses `AlarmManager` with exact scheduling and foreground services to trigger reliable reminders.
+- **Full-Screen Lock Screen Alarm**: Full-screen overlay `TaskAlarmActivity` with vibration and ringtones for high-priority reminders.
+- **Device Reboot Resilience**: Automatically reschedules active alarms upon system reboot via `TaskBootReceiver`.
 
-- **Ngôn ngữ**: Kotlin (bản 2.3.20)
-- **UI Framework**: Jetpack Compose (Material 3) với chuyển động trượt ngang, staggered fade-in so le và crossfade transitions mượt mà.
-- **Dependency Injection**: Dagger Hilt (2.60)
-- **Cơ sở dữ liệu**: Room Database (2.6.1) quản lý sự kiện và cache tử vi.
-- **Lưu trữ nhẹ**: Jetpack DataStore Preferences
-- **Mạng**: Retrofit 2 + OkHttp + kotlinx.serialization
-- **Testing**: JUnit 4, Google Truth, MockK, Compose UI Test.
+### 4. 🤖 AI Feng Shui & Astrology Assistant (DeepSeek AI)
+- **Integrated AI Chat**: Powered by DeepSeek API with streaming responses.
+- **Personalized Advice**: Ask questions regarding auspicious dates, Feng Shui consultation, horoscopes, and event planning according to traditional Eastern principles.
+
+### 5. 🔍 Universal Search & Custom Onboarding
+- **Search Engine**: Instantly search for dates, traditional holidays, special events, and tasks.
+- **Personalized Onboarding**: Setup birth date to personalize Eastern horoscope calculations stored locally with **Jetpack DataStore**.
 
 ---
 
-## 📂 Cấu Trúc Dự Án (Clean Architecture)
+## 🛠️ Tech Stack & Architecture
+
+- **Language**: [Kotlin](https://kotlinlang.org/) (2.3.20)
+- **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) with Material 3 Design
+- **Architecture**: Clean Architecture (Domain, Data, UI Layers) + MVVM Pattern + Unidirectional Data Flow (UDF)
+- **Dependency Injection**: [Dagger Hilt](https://dagger.dev/hilt/) (2.60)
+- **Local Database**: [Room Database](https://developer.android.com/training/data-storage/room) with KSP
+- **Data Storage**: [Jetpack DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (Preferences)
+- **Networking**: [Retrofit 2](https://square.github.io/retrofit/) + [OkHttp 3](https://square.github.io/okhttp/) + [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization)
+- **Asynchronous**: Kotlin Coroutines & StateFlow
+- **Performance**: Baseline Profiles (`androidx.profileinstaller`)
+- **Testing**: JUnit 4, Google Truth, MockK, Compose UI Testing
+
+---
+
+## 📂 Project Structure
 
 ```text
 app/src/main/java/com/example/lichvannien/
 ├── data/
 │   ├── local/
-│   │   ├── db/          # Room DB, DAOs (SpecialDayDao, HoroscopeCacheDao)
-│   │   ├── entity/      # Room Entities (SpecialDayEntity, HoroscopeCacheEntity)
-│   │   └── datastore/   # UserPreferences lưu ngày sinh
-│   ├── remote/
-│   │   ├── api/         # AztroApi (Retrofit interface)
-│   │   └── dto/         # DTO classes (HoroscopeResponse)
-│   └── repository/      # Triển khai các Repository (SpecialDayRepositoryImpl, HoroscopeRepositoryImpl)
+│   │   ├── datastore/       # UserPreferences (DataStore implementation)
+│   │   ├── db/              # Room AppDatabase & DAOs (TaskDao, SpecialDayDao)
+│   │   └── entity/          # Room Entities (TaskEntity, SpecialDayEntity)
+│   ├── mapper/              # Entity <-> Domain Model mappers
+│   ├── remote/              # Retrofit APIs & DTOs (DeepSeekApi, DeepSeekDto)
+│   └── repository/          # Repository Implementations (TaskRepositoryImpl, etc.)
 ├── domain/
-│   ├── model/           # Các domain models thuần tuý (SolarDate, LunarDate, Horoscope, DayDetail)
-│   ├── repository/      # Các Repository Interface định nghĩa nghiệp vụ
-│   ├── usecase/         # Lớp Use Cases (GetDayDetailUseCase)
-│   └── util/            # Lớp tiện ích thuật toán (LunarConverter, AuspiciousCalculator, ZodiacHelper)
-├── di/                  # Hilt Dependency Injection Modules
+│   ├── model/               # Pure Domain Entities (SolarDate, LunarDate, Task, DayDetail)
+│   ├── repository/          # Repository Interfaces
+│   ├── usecase/             # Business Use Cases (GetDayDetailUseCase, etc.)
+│   └── util/                # Algorithms (LunarConverter, AuspiciousCalculator, EasternFengShuiHelper)
+├── di/                      # Dependency Injection Hilt Modules
 └── ui/
-    ├── calendar/        # Màn hình Lịch Tháng (CalendarScreen, CalendarViewModel)
-    ├── detail/          # Màn hình Chi Tiết Ngày (DayDetailScreen, DayDetailViewModel)
-    ├── horoscope/       # Màn hình Tử Vi (HoroscopeScreen, HoroscopeViewModel)
-    ├── onboarding/      # Màn hình Chọn ngày sinh (OnboardingScreen, OnboardingViewModel)
-    ├── navigation/      # Cấu hình routes và navigation Compose
-    └── theme/           # Cấu hình Material 3 Colors, Typo, Theme ấm cúng đỏ/cam
+    ├── ai/                  # AI Chatbot Screen & ViewModel
+    ├── calendar/            # Month Calendar Screen & ViewModel
+    ├── detail/              # Day Detail / Feng Shui Screen & ViewModel
+    ├── onboarding/          # User Onboarding & Birthday Selection
+    ├── search/              # Universal Search Dialog & ViewModel
+    ├── task/                # Task Management, Alarms, Reminders, Receivers & Services
+    ├── today/               # Daily Overview Dashboard Screen & ViewModel
+    ├── navigation/          # Navigation Graph & Destinations
+    └── theme/               # Material 3 Theme, Typography, and Color Palette
 ```
 
 ---
 
-## 🚀 Hướng Dẫn Xây Dựng & Chạy Ứng Dụng
+## 🚀 Getting Started
 
-### Yêu Cầu Hệ Thống
-- **Android Studio**: Ladybug (2024.2.1+) hoặc mới hơn.
-- **JDK**: Java 17 trở lên.
-- **Android SDK**: Compile SDK 36, Min SDK 24.
+### Prerequisites
+- **Android Studio**: Ladybug (2024.2.1) or newer
+- **JDK**: Java 17+
+- **Android SDK**: Compile SDK `36`, Minimum SDK `24`
 
-### Các Bước Thực Hiện
+### Installation & Build
 
-1. **Clone dự án**:
+1. **Clone the Repository**:
    ```bash
-   git clone <repository_url>
+   git clone https://github.com/tranhienchuong/Calendar.git
    cd Calendar
    ```
-2. **Chạy Unit Tests**:
-   Kiểm tra tính chính xác của các thuật toán âm dương lịch, tính ngày tốt xấu và caching:
+
+2. **Configure API Key (Optional for AI Assistant)**:
+   Add your DeepSeek API Key in `local.properties` (this file is gitignored):
+   ```properties
+   DEEPSEEK_API_KEY=your_deepseek_api_key_here
+   ```
+
+3. **Run Unit Tests**:
    ```bash
    ./gradlew testDebugUnitTest
    ```
-3. **Chạy Phân Tích Chất Lượng Code (Lint)**:
+
+4. **Run Code Quality & Lint**:
    ```bash
    ./gradlew lintDebug
    ```
-4. **Biên dịch và sinh APK Debug**:
+
+5. **Build Debug APK**:
    ```bash
    ./gradlew assembleDebug
    ```
-   *File APK sau khi compile thành công sẽ nằm ở:* `app/build/outputs/apk/debug/app-debug.apk`
+   The generated APK will be available at: `app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
-## 📜 Giấy Phép (License)
+## 🧪 Testing Strategy
 
-Dự án được phân phối dưới giấy phép Apache License 2.0. Xem chi tiết tại tệp `LICENSE`.
+- **Unit Tests**: Full coverage for lunar conversion algorithms, auspicious time computations, Feng Shui helpers, use cases, and ViewModels.
+- **Instrumented UI Tests**: Compose UI tests covering calendar interactions, onboarding flow, and navigation.
+
+---
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
