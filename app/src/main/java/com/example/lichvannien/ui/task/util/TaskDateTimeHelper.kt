@@ -186,20 +186,64 @@ object TaskDateTimeHelper {
 
     /**
      * Tính toán thời điểm kích hoạt báo thức tiếp theo (ngày + giờ) trong tương lai.
-     * Trả về null nếu task là ONCE và đã quá hạn.
+     * Nếu task đã hoàn thành trong chu kỳ hiện tại (isCompleted = true), sẽ tính cho chu kỳ lặp lại kế tiếp.
+     * Trả về null nếu task là ONCE và đã quá hạn hoặc đã hoàn thành.
      */
     fun calculateNextTriggerDateTime(
         taskDate: LocalDate,
         taskTime: LocalTime,
         repeatType: String,
-        now: LocalDateTime = LocalDateTime.now()
+        now: LocalDateTime = LocalDateTime.now(),
+        isCompleted: Boolean = false
     ): LocalDateTime? {
         val rule = TaskRepeatRule.fromCode(repeatType)
-        var triggerDateTime = LocalDateTime.of(taskDate, taskTime)
 
         if (rule == TaskRepeatRule.ONCE) {
+            if (isCompleted) return null
+            val triggerDateTime = LocalDateTime.of(taskDate, taskTime)
             return if (triggerDateTime.isBefore(now)) null else triggerDateTime
         }
+
+        if (isCompleted) {
+            val baseDate = if (taskDate.isAfter(now.toLocalDate())) taskDate else now.toLocalDate()
+            return when (rule) {
+                TaskRepeatRule.ONCE -> null
+                TaskRepeatRule.DAILY -> {
+                    LocalDateTime.of(baseDate.plusDays(1), taskTime)
+                }
+                TaskRepeatRule.WEEKDAYS -> {
+                    var d = baseDate.plusDays(1)
+                    while (d.dayOfWeek.value > 5) {
+                        d = d.plusDays(1)
+                    }
+                    LocalDateTime.of(d, taskTime)
+                }
+                TaskRepeatRule.WEEKLY -> {
+                    val targetDayOfWeek = taskDate.dayOfWeek
+                    var d = baseDate.plusDays(1)
+                    while (d.dayOfWeek != targetDayOfWeek) {
+                        d = d.plusDays(1)
+                    }
+                    LocalDateTime.of(d, taskTime)
+                }
+                TaskRepeatRule.MONTHLY -> {
+                    var dt = LocalDateTime.of(taskDate, taskTime)
+                    while (!dt.isAfter(now) || !dt.toLocalDate().isAfter(baseDate)) {
+                        dt = dt.plusMonths(1)
+                    }
+                    dt
+                }
+                TaskRepeatRule.YEARLY -> {
+                    var dt = LocalDateTime.of(taskDate, taskTime)
+                    while (!dt.isAfter(now) || !dt.toLocalDate().isAfter(baseDate)) {
+                        dt = dt.plusYears(1)
+                    }
+                    dt
+                }
+            }
+        }
+
+        var triggerDateTime = LocalDateTime.of(taskDate, taskTime)
 
         if (rule == TaskRepeatRule.WEEKDAYS) {
             while (triggerDateTime.dayOfWeek.value > 5) {

@@ -16,10 +16,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 import com.example.lichvannien.ui.task.alarm.TaskAlarmActivity
 import com.example.lichvannien.ui.task.alarm.TaskAlarmService
+import com.example.lichvannien.ui.task.util.TaskDateTimeHelper
 
 @AndroidEntryPoint
 class TaskAlarmReceiver : BroadcastReceiver() {
@@ -37,52 +39,71 @@ class TaskAlarmReceiver : BroadcastReceiver() {
 
         if (taskId == -1L) return
 
-        val isAlarm = reminderType.equals("ALARM", ignoreCase = true)
-
-        if (isAlarm) {
-            // Đảm bảo CPU hoạt động và đánh thức thiết bị khi có báo thức
-            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-            val wakeLock = powerManager?.newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                "LichVanNien:TaskAlarmReceiver"
-            )
-            wakeLock?.acquire(15 * 1000L)
-
-            // 1. Khởi chạy Foreground Service phát chuông báo thức liên tục và rung
-            TaskAlarmService.startAlarm(context, taskId, taskTitle)
-
-            // 2. Mở màn hình TaskAlarmActivity toàn màn hình đè lên màn hình khóa
-            try {
-                val alarmIntent = Intent(context, TaskAlarmActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                            Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    putExtra(TaskAlarmService.EXTRA_TASK_ID, taskId)
-                    putExtra(TaskAlarmService.EXTRA_TASK_TITLE, taskTitle)
-                }
-                context.startActivity(alarmIntent)
-            } catch (_: Exception) {}
-
-            try {
-                if (wakeLock?.isHeld == true) wakeLock.release()
-            } catch (_: Exception) {}
-        } else {
-            // Chế độ THÔNG BÁO thường: Giữ nguyên thiết kế ban đầu (chỉ gửi notification nhẹ nhàng lên thanh trạng thái)
-            showStandardNotification(context, taskId, taskTitle)
-        }
-
-        // Lên lịch cho chu kỳ tiếp theo nếu task có chu kỳ lặp lại (giữ nguyên ngày của task hôm nay trong DB)
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val task = taskRepository.getTaskById(taskId)
-                if (task != null && !task.repeatType.equals("ONCE", ignoreCase = true)) {
-                    // scheduleTaskReminder tự động tính toán thời điểm reo tiếp theo (ví dụ: ngày mai) và nạp vào AlarmManager
-                    // mà KHÔNG làm thay đổi ngày của task trong Database để task hôm nay hiển thị đúng trạng thái Quá hạn
+                if (task == null) {
+                    // Công việc đã bị xóa, không phát chuông hay thông báo
+                    return@launch
+                }
+
+                val now = LocalDateTime.now()
+                val today = now.toLocalDate()
+                val taskDate = TaskDateTimeHelper.parseDate(task.date) ?: today
+
+                // Nếu công việc đã được đánh dấu hoàn thành trong chu kỳ hôm nay (hoặc trước đó):
+                if (task.isCompleted && !taskDate.isAfter(today)) {
+                    // Không phát chuông hay gửi thông báo
+                    // Nếu là task lặp lại, đảm bảo chu kỳ ngày mai / tiếp theo được lên lịch sẵn sàng
+                    if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
+                        reminderScheduler.scheduleTaskReminder(task)
+                    }
+                    return@launch
+                }
+
+                val effectiveTitle = task.title.ifBlank { taskTitle }
+                val effectiveReminderType = task.reminderType.ifBlank { reminderType }
+                val isAlarm = effectiveReminderType.equals("ALARM", ignoreCase = true)
+
+                if (isAlarm) {
+                    // Đảm bảo CPU hoạt động và đánh thức thiết bị khi có báo thức
+                    val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+                    val wakeLock = powerManager?.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                        "LichVanNien:TaskAlarmReceiver"
+                    )
+                    wakeLock?.acquire(15 * 1000L)
+
+                    // 1. Khởi chạy Foreground Service phát chuông báo thức liên tục và rung
+                    TaskAlarmService.startAlarm(context, taskId, effectiveTitle)
+
+                    // 2. Mở màn hình TaskAlarmActivity toàn màn hình đè lên màn hình khóa
+                    try {
+                        val alarmIntent = Intent(context, TaskAlarmActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            putExtra(TaskAlarmService.EXTRA_TASK_ID, taskId)
+                            putExtra(TaskAlarmService.EXTRA_TASK_TITLE, effectiveTitle)
+                        }
+                        context.startActivity(alarmIntent)
+                    } catch (_: Exception) {}
+
+                    try {
+                        if (wakeLock?.isHeld == true) wakeLock.release()
+                    } catch (_: Exception) {}
+                } else {
+                    // Chế độ THÔNG BÁO thường
+                    showStandardNotification(context, taskId, effectiveTitle)
+                }
+
+                // Lên lịch cho chu kỳ tiếp theo nếu task có chu kỳ lặp lại (giữ nguyên ngày của task hôm nay trong DB)
+                if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
                     reminderScheduler.scheduleTaskReminder(task)
                 }
             } catch (_: Exception) {
-                // Xử lý an toàn khi receiver chạy
+                // Safe catch
             } finally {
                 pendingResult.finish()
             }

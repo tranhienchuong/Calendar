@@ -120,6 +120,14 @@ class TaskAlarmService : Service() {
                 if (taskId > 0) {
                     CoroutineScope(Dispatchers.IO).launch {
                         taskRepository.toggleTaskCompleted(taskId, true)
+                        val updatedTask = taskRepository.getTaskById(taskId)
+                        if (updatedTask != null) {
+                            if (updatedTask.repeatType.equals("ONCE", ignoreCase = true)) {
+                                reminderScheduler.cancelTaskReminder(taskId)
+                            } else {
+                                reminderScheduler.scheduleTaskReminder(updatedTask.copy(isCompleted = true))
+                            }
+                        }
                     }
                 }
                 stopAlarmAndSelf()

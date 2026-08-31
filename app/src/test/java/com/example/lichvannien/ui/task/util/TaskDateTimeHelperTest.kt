@@ -171,4 +171,57 @@ class TaskDateTimeHelperTest {
         // Next Monday is Aug 31
         assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 31, 8, 0))
     }
+
+    @Test
+    fun calculateNextTriggerDateTime_onceCompleted_returnsNull() {
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "ONCE",
+            now = fixedNow,
+            isCompleted = true
+        )
+        assertThat(next).isNull()
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_dailyCompletedTodayFutureTime_returnsTomorrow() {
+        // Task is scheduled for 14:00 today (future compared to fixedNow 10:00 AM)
+        // But user already marked it completed -> should advance to tomorrow 14:00
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "DAILY",
+            now = fixedNow,
+            isCompleted = true
+        )
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 25, 14, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_weekdaysCompletedFridayFutureTime_returnsMonday() {
+        val fridayNow = LocalDateTime.of(2026, 8, 28, 10, 0)
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 28),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "WEEKDAYS",
+            now = fridayNow,
+            isCompleted = true
+        )
+        // Friday is done -> Next weekday is Monday Aug 31
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 31, 14, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_weeklyCompletedMondayFutureTime_returnsNextMonday() {
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 24),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "WEEKLY",
+            now = fixedNow, // Monday 10:00 AM
+            isCompleted = true
+        )
+        // Monday is done -> Next Monday is Aug 31
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 31, 14, 0))
+    }
 }

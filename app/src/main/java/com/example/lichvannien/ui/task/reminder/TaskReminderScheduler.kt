@@ -111,9 +111,12 @@ class TaskReminderScheduler @Inject constructor(
     }
 
     fun scheduleTaskReminder(task: Task) {
-        if (task.isCompleted && task.repeatType.equals("ONCE", ignoreCase = true)) {
-            cancelTaskReminder(task.id)
-            return
+        if (task.isCompleted) {
+            NotificationManagerCompat.from(context).cancel(task.id.toInt())
+            if (task.repeatType.equals("ONCE", ignoreCase = true)) {
+                cancelTaskReminder(task.id)
+                return
+            }
         }
 
         val taskDate = TaskDateTimeHelper.parseDate(task.date) ?: LocalDate.now()
@@ -124,7 +127,8 @@ class TaskReminderScheduler @Inject constructor(
             taskDate = taskDate,
             taskTime = taskTime,
             repeatType = task.repeatType,
-            now = now
+            now = now,
+            isCompleted = task.isCompleted
         ) ?: run {
             cancelTaskReminder(task.id)
             return
