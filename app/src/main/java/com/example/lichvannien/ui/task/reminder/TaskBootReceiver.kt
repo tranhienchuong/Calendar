@@ -31,9 +31,29 @@ class TaskBootReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val allTasks = taskRepository.getAllTasks().firstOrNull() ?: emptyList()
-                    val activeTasks = allTasks.filter { !it.isCompleted || !it.repeatType.equals("ONCE", ignoreCase = true) }
-                    for (task in activeTasks) {
-                        reminderScheduler.scheduleTaskReminder(task)
+                    val today = java.time.LocalDate.now()
+                    val tasksToUpdate = mutableListOf<com.example.lichvannien.domain.model.Task>()
+
+                    for (task in allTasks) {
+                        if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
+                            val taskDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.parseDate(task.date)
+                            if (taskDate != null && taskDate.isBefore(today)) {
+                                val nextDate = com.example.lichvannien.ui.task.util.TaskDateTimeHelper.calculateNextActiveDate(task.date, task.repeatType, today)
+                                val refreshedTask = task.copy(
+                                    date = nextDate,
+                                    isCompleted = false
+                                )
+                                tasksToUpdate.add(refreshedTask)
+                                reminderScheduler.scheduleTaskReminder(refreshedTask)
+                            } else {
+                                reminderScheduler.scheduleTaskReminder(task)
+                            }
+                        } else if (!task.isCompleted) {
+                            reminderScheduler.scheduleTaskReminder(task)
+                        }
+                    }
+                    if (tasksToUpdate.isNotEmpty()) {
+                        taskRepository.updateTasks(tasksToUpdate)
                     }
                 } catch (_: Exception) {
                     // Safe catch on boot receiver

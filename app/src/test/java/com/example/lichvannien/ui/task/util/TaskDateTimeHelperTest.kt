@@ -224,4 +224,43 @@ class TaskDateTimeHelperTest {
         // Monday is done -> Next Monday is Aug 31
         assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 31, 14, 0))
     }
+
+    @Test
+    fun calculateNextTriggerDateTime_dailyPastCompletedYesterday_returnsTodayIfNotPassed() {
+        // Completed yesterday, today at 10:00 AM, task is scheduled for 14:00 today -> should return today 14:00
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 23),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "DAILY",
+            now = fixedNow, // 2026-08-24 10:00 AM
+            isCompleted = true
+        )
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 24, 14, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_dailyPastCompletedYesterday_returnsTomorrowIfPassed() {
+        // Completed yesterday, today at 10:00 AM, task was scheduled for 08:00 (past) -> should return tomorrow 08:00
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 23),
+            taskTime = java.time.LocalTime.of(8, 0),
+            repeatType = "DAILY",
+            now = fixedNow, // 2026-08-24 10:00 AM
+            isCompleted = true
+        )
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 25, 8, 0))
+    }
+
+    @Test
+    fun calculateNextTriggerDateTime_weekdaysPastCompletedFriday_returnsMonday() {
+        // Completed on Friday Aug 21, now is Monday Aug 24 10:00 AM, task is for 14:00 -> should return Monday 14:00
+        val next = TaskDateTimeHelper.calculateNextTriggerDateTime(
+            taskDate = LocalDate.of(2026, 8, 21),
+            taskTime = java.time.LocalTime.of(14, 0),
+            repeatType = "WEEKDAYS",
+            now = fixedNow, // Monday 2026-08-24 10:00 AM
+            isCompleted = true
+        )
+        assertThat(next).isEqualTo(LocalDateTime.of(2026, 8, 24, 14, 0))
+    }
 }

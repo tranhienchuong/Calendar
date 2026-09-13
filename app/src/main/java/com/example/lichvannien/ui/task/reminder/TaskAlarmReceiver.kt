@@ -52,18 +52,32 @@ class TaskAlarmReceiver : BroadcastReceiver() {
                 val today = now.toLocalDate()
                 val taskDate = TaskDateTimeHelper.parseDate(task.date) ?: today
 
-                // Nếu công việc đã được đánh dấu hoàn thành trong chu kỳ hôm nay (hoặc trước đó):
-                if (task.isCompleted && !taskDate.isAfter(today)) {
-                    // Không phát chuông hay gửi thông báo
-                    // Nếu là task lặp lại, đảm bảo chu kỳ ngày mai / tiếp theo được lên lịch sẵn sàng
-                    if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
-                        reminderScheduler.scheduleTaskReminder(task)
+                var taskToRun = task
+                if (task.repeatType.equals("ONCE", ignoreCase = true)) {
+                    if (task.isCompleted) {
+                        return@launch
                     }
-                    return@launch
+                } else {
+                    // Task lặp lại:
+                    if (taskDate.isBefore(today)) {
+                        // Task từ ngày cũ (hôm qua hoặc trước đó):
+                        // Tự động rollover ngày sang hôm nay và reset isCompleted = false
+                        val refreshedTask = task.copy(
+                            date = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE),
+                            isCompleted = false
+                        )
+                        taskRepository.updateTask(refreshedTask)
+                        taskToRun = refreshedTask
+                    } else if (taskDate.isEqual(today) && task.isCompleted) {
+                        // Người dùng đã hoàn thành việc của HÔM NAY -> Không reo hôm nay
+                        // Đảm bảo chu kỳ kế tiếp (ngày mai / tiếp theo) được nạp vào AlarmManager
+                        reminderScheduler.scheduleTaskReminder(task)
+                        return@launch
+                    }
                 }
 
-                val effectiveTitle = task.title.ifBlank { taskTitle }
-                val effectiveReminderType = task.reminderType.ifBlank { reminderType }
+                val effectiveTitle = taskToRun.title.ifBlank { taskTitle }
+                val effectiveReminderType = taskToRun.reminderType.ifBlank { reminderType }
                 val isAlarm = effectiveReminderType.equals("ALARM", ignoreCase = true)
 
                 if (isAlarm) {
@@ -99,8 +113,8 @@ class TaskAlarmReceiver : BroadcastReceiver() {
                 }
 
                 // Lên lịch cho chu kỳ tiếp theo nếu task có chu kỳ lặp lại (giữ nguyên ngày của task hôm nay trong DB)
-                if (!task.repeatType.equals("ONCE", ignoreCase = true)) {
-                    reminderScheduler.scheduleTaskReminder(task)
+                if (!taskToRun.repeatType.equals("ONCE", ignoreCase = true)) {
+                    reminderScheduler.scheduleTaskReminder(taskToRun)
                 }
             } catch (_: Exception) {
                 // Safe catch

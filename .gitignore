@@ -20,6 +20,8 @@ buildOutput/
 # Local configuration file (contains Android SDK path, DEEPSEEK_API_KEY, secrets)
 local.properties
 secrets.properties
+.agents/**/mcp_config.json
+
 
 # Signing keys & certificates
 *.jks
