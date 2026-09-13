@@ -1,50 +1,76 @@
-# Android build, test, and real-device rules
+# Lịch Vạn Niên
 
-Use the repository wrapper and `scripts/android.ps1` for Android work. Run commands from the repository root.
+This project is a modern Android application built with Jetpack Compose, Kotlin, and Gradle.
 
-## Build
+## Skills Integration
 
-- Use the shortest matching gate while developing; Gradle's daemon, configuration cache, build cache, and file-system watching are intentionally enabled for warm runs.
-- Compile-only feedback after a UI or Kotlin edit: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task compile`.
-- Build the current debug APK: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task build`
-- The expected artifact is `app\build\outputs\apk\debug\app-debug.apk`.
-- Treat a non-zero script exit code as a failed build. Report the Gradle task and the first actionable error; do not install an APK from a failed or stale build.
+The project has installed the official **Google Android Skills** (`android/skills`) as well as project-specific skills in `.agents/skills/`.
+When working on tasks related to Android architecture, UI, build configurations, calendar, tasks, or system integrations, you **MUST** consult and apply the relevant skills:
 
-## Verification
+### 1. Build System & Migration
+- `agp-9-upgrade`: Nâng cấp / migrate Android Gradle Plugin 9, built-in Kotlin, cú pháp DSL mới, KSP/kapt.
+- `android-cli`: Sử dụng công cụ dòng lệnh `android` để quản lý AVD, chụp màn hình, kiểm tra SDK, layout inspection.
 
-- Run focused unit tests while changing business logic: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task test-class -Tests <fully.qualified.TestClass>`.
-- Run the full local unit suite: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task unit-test`.
-- Run lint for UI, resource, manifest, Gradle, or dependency changes: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task lint`.
-- Before handing off a feature or fix, run the combined local quality gate once: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task verify`. State the exact commands and result.
-- Run instrumented tests only on a dedicated test device, or when the user explicitly authorizes the connected device. Instrumented tests install APKs and may alter app-local test data.
+### 2. Modern UI & Compose
+- `edge-to-edge`: Chuẩn hóa giao diện tràn viền (Edge-to-Edge bắt buộc từ Android 15), xử lý Insets, IME (bàn phím ảo), Status/Navigation Bar.
+- `navigation-3`: Áp dụng Jetpack Navigation 3 (NavKey, NavDisplay, Scenes, multi-pane, dialogs).
+- `navigation-event`: Xử lý cử chỉ Predictive Back (vuốt quay lại mượt mà) trên Compose.
+- `adaptive`: Thiết kế UI thích ứng với màn hình gập, tablet, desktop bằng MediaQuery, Grid, FlexBox.
+- `styles`: Áp dụng Compose Styles API và `Modifier.styleable`.
+- `migrate-xml-views-to-jetpack-compose`: Di chuyển từ XML Views sang declarative Compose.
 
-## Real-device ADB
+### 3. AI & System Integrations
+- `ml-kit-genai-prompt-api`: Tích hợp mô hình Gemini Nano chạy on-device qua ML Kit GenAI.
+- `appfunctions`: Phơi các tác vụ của app (tra cứu ngày hoàng đạo, thêm nhắc nhở) ra hệ thống Android cho AI trợ lý / voice command.
+- `camerax`: Tích hợp camera chụp ảnh/quay video với CameraX.
+- `media3-cast-integration`: Tích hợp Google Cast qua Jetpack Media3.
 
-- Work only with a physical, authorized device. Never start or select an emulator for this project.
-- Inspect the attached device first: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task device-check -Serial <serial>`.
-- Pass `-Serial <serial>` whenever more than one device is connected. The script rejects serials beginning with `emulator-`.
-- Build and install the debug APK while preserving package data: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task install -Serial <serial> -AllowDeviceMutation`.
-- Launch and wait for the main activity: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task launch -Serial <serial>`.
-- Run the full instrumented suite on the selected device only: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\android.ps1 -Task connected-test -Serial <serial> -AllowDeviceMutation`.
-- `-AllowDeviceMutation` acknowledges device writes. Never use it without user authorization.
+### 4. Performance & Testing
+- `r8-analyzer`: Phân tích và tối ưu hóa ProGuard / R8 keep rules, giảm kích thước APK/AAB.
+- `android-profiler`: Chẩn đoán và ghi lại hiệu năng (CPU trace, heap dump, memory leaks, Perfetto SQL).
+- `testing-setup`: Xây dựng hạ tầng kiểm thử (Unit test, Compose UI test, Screenshot testing).
 
-## Performance reproduction
+### 5. Security & Identity
+- `android-intent-security`: Bảo mật các component trong AndroidManifest.xml, chống Intent Redirection và rò rỉ PendingIntent.
+- `play-policy-insights`: Tự động audit code và manifest đối chiếu chính sách Play Store.
+- `restore-credentials` & `verified-email`: Xác thực Credential Manager, restore keys khi đổi máy.
 
-- For touch or animation reports, collect a repeatable baseline on the real device: reset `gfxinfo`, perform the exact gesture, then capture `gfxinfo` again.
-- Record the device model, Android version, gesture count/duration, and `Janky frames`, frame percentiles, `High input latency`, `Slow UI thread`, and GPU percentiles.
-- Restore any temporary device settings before handoff, including all three animation scales.
-- Run the CalendarScreen month-swipe regression gate with an installed app whose onboarding is already complete: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\measure-calendar-swipe.ps1 -Serial <serial> -Count 10 -Direction Left -DurationMs 300`. The gate validates the header after every swipe, not merely the net final month.
-- `Left` advances to the next month and `Right` goes to the previous month. The script launches the existing activity, but never installs an APK, clears app data, or changes animation scales; it shares `scripts/lib/android-device.ps1` with `android.ps1` and rejects `emulator-*` and other QEMU devices.
-- The gate exits `0` on pass and `1` on fail. It writes only parsed JSON to the system temp directory by default; an explicit `-OutputPath` must point outside the source tree. The ADB gate does not measure visual frame timing.
+## Instruction Protocol
+Whenever working on any of the above topics:
+1. Always check the corresponding `.agents/skills/<skill_name>/SKILL.md` before generating code.
+2. Read the specific guides in `.agents/skills/<skill_name>/references/` for detailed APIs, recipes, and anti-patterns to prevent hallucinations.
 
-## Guardrails
+---
+## Post-Code Verification & Automated Testing
+- **Always verify after coding**: Never declare a task complete immediately after writing code. Always run verification commands to prove the implementation works.
+- **Build & Unit Test Verification**:
+  - Run `./gradlew testDebugUnitTest` after modifying logic or creating new components.
+  - If no connected device is available, run `./gradlew assembleDebug` instead of just `compileDebugKotlin` — it also catches resource/merge/manifest errors that Kotlin compilation alone misses.
+  - Fix any compilation errors, unresolved references, or broken tests before reporting results to the user.
+- **Escalate instead of silently fixing large issues**: If fixing an error requires more than 1-2 lines, or requires changing logic/architecture/approach (not just syntax), STOP and explain the error and your proposed fix to the user before applying it. Do not silently refactor code to make a build pass.
 
-- Keep build output, test output, and device serials out of source files.
-- Do not uninstall the application, clear application data, alter global device settings, or stop unrelated ADB/Gradle processes unless the user explicitly asks.
-- When a build is already running, wait for it or ask before stopping it; do not start competing Gradle builds.
+## Device Deployment & ADB Runtime Verification
+- **Check Connected Devices**: Check if a device or emulator is connected using `adb devices`.
+- **Auto-Install & Runtime Inspection**: If an active device/emulator is detected:
+  1. Clear the log buffer first: `adb logcat -c` (avoids reading stale crashes from a previous run).
+  2. Build and install the app: `./gradlew installDebug`.
+  3. Launch the relevant Activity: `adb shell am start -n com.example.lichvannien/.MainActivity`.
+  4. Wait ~3 seconds, then confirm the process is still alive: `adb shell pidof com.example.lichvannien`. If it returns nothing, the app crashed or ANR'd on launch — treat this as a failure even if no log line matched.
+  5. Dump and inspect logs for crashes: `adb logcat -d | grep -A 30 "FATAL EXCEPTION"`.
+  6. Also check for ANRs specifically: `adb logcat -d -s ActivityManager:E | grep -i "anr"`.
+- **Graceful Fallback**: If no device is connected, clearly inform the user that unit tests and compilation succeeded, and recommend running on a device when one is connected.
+- **Automated checks are not a substitute for functional testing**: passing build + no crash only proves the app *runs*, not that business logic is *correct*.
 
-## Background task & process efficiency
+## Git Checkpointing
+- After a verification pass succeeds (build + install + clean logcat + process alive), commit the change with a clear, descriptive message (e.g. `feat(calendar): add lunar leap month calculation`).
+- Do not commit if verification failed. Report the failure instead and wait for the user's decision.
+- Never force-push, rewrite history, or commit directly to `main` without the user asking for it.
 
-- Never poll in a loop or repeatedly query `manage_task` status while waiting for background tasks (e.g., Gradle builds, test runs, verify).
-- Never spawn subagents or set unnecessary timers solely to check on running tasks.
-- Rely on reactive wakeups: launch the command, give a brief user status update, and stop calling tools. The platform automatically wakes the agent with full task output upon completion without consuming idle tokens.
+## Protected Files
+- Never modify, delete, move, or commit the following without explicit user confirmation: `google-services.json`, any `.jks`/`.keystore` file, `local.properties`, `secrets.properties`, and any file containing API keys or secrets.
+- Before running any command that stages files for commit, double check none of the above are included (e.g. verify they're covered by `.gitignore`, don't just trust past state).
+
+## Background Task & Process Efficiency
+- **Never poll in a loop** or repeatedly query `manage_task` status while waiting for background tasks (e.g., Gradle builds, test runs, verify).
+- **Never spawn subagents** or set unnecessary timers solely to check on running tasks.
+- **Rely on reactive wakeups**: Launch the command, provide a brief status update to the user, and stop calling tools immediately. The platform automatically wakes the agent with full task output upon completion without consuming idle tokens.
